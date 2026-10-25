@@ -12,7 +12,7 @@
 
   "license": "MIT",
 
-  "environment": "*",
+  "environment": "server",
   "entrypoints": {
     "main": [
       "themislib.ThemisLib::onInitialize"

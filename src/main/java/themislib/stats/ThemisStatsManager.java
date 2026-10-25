@@ -55,8 +55,12 @@ public final class ThemisStatsManager implements RankingDataProvider
     private final ConcurrentHashMap<String, UUID> nameIndex = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, double[]> lastPositions = new ConcurrentHashMap<>();
 
-    /** 最近一次使用附魔台/铁砧的玩家（用于给「附魔次数」归属到玩家）。 */
-    private final ConcurrentHashMap<UUID, Long> enchantUsers = new ConcurrentHashMap<>();
+    /** 附魔归属记录：最近一次使用附魔台/铁砧的玩家（有效 UUID + 数据域 + 时间戳）。 */
+    private record EnchantUser(UUID uuid, DataDomain domain, long timestamp)
+    {
+    }
+
+    private volatile EnchantUser lastEnchantUser;
 
     private volatile DatabaseManager database;
     private int tickCounter;
@@ -151,27 +155,20 @@ public final class ThemisStatsManager implements RankingDataProvider
     public void recordEnchantUser(ServerPlayer player)
     {
         if (player == null) return;
-        enchantUsers.put(player.getUUID(), System.currentTimeMillis());
+        lastEnchantUser = new EnchantUser(
+                FakePlayerDetector.effectiveUuid(player),
+                FakePlayerDetector.domainOf(player),
+                System.currentTimeMillis());
     }
 
-    /** 记一次附魔：归属到最近使用过附魔台/铁砧的玩家。 */
+    /** 记一次附魔：归属到 10 秒内最近使用过附魔台/铁砧的玩家（按其有效 UUID 与数据域写入）。 */
     public void addEnchantment()
     {
         if (!isMetricEnabled(Metric.ENCHANTMENTS)) return;
-        long now = System.currentTimeMillis();
-        UUID best = null;
-        long bestTime = 0L;
-        for (Map.Entry<UUID, Long> entry : enchantUsers.entrySet())
-        {
-            long ts = entry.getValue();
-            if (now - ts <= ENCHANT_ATTRIBUTION_WINDOW && ts >= bestTime)
-            {
-                best = entry.getKey();
-                bestTime = ts;
-            }
-        }
-        if (best == null) return;
-        addRaw(best, DataDomain.REAL, Metric.ENCHANTMENTS, 1L);
+        EnchantUser user = lastEnchantUser;
+        if (user == null) return;
+        if (System.currentTimeMillis() - user.timestamp() > ENCHANT_ATTRIBUTION_WINDOW) return;
+        addRaw(user.uuid(), user.domain(), Metric.ENCHANTMENTS, 1L);
     }
 
     /** 指标是否处于开启状态（总开关 + 单项开关）。 */
@@ -385,6 +382,7 @@ public final class ThemisStatsManager implements RankingDataProvider
         if (manager == null) return;
 
         List<StatRow> rows = new ArrayList<>();
+        Map<UUID, String> flushedNames = new HashMap<>();
         for (Map.Entry<StatKey, PlayerStats> entry : data.entrySet())
         {
             StatKey key = entry.getKey();
@@ -392,8 +390,14 @@ public final class ThemisStatsManager implements RankingDataProvider
             {
                 rows.add(new StatRow(key.uuid().toString(), key.domain().id(), metric.getKey().dbName(), metric.getValue()));
             }
+            String name = names.get(key.uuid());
+            if (name != null)
+            {
+                flushedNames.put(key.uuid(), name);
+            }
         }
-        manager.upsert(rows, names);
+        // last_seen 只刷新本次真正落库的玩家，不触碰历史玩家的记录
+        manager.upsert(rows, flushedNames);
         if (ThemisLib.DEBUG)
         {
             ThemisLib.LOG.info("[Themis][debug] 落库(周期) 行数={} 玩家数={}", rows.size(), data.size());

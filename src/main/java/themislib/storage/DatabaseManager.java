@@ -65,13 +65,6 @@ public final class DatabaseManager implements AutoCloseable
             )
             """;
 
-    private static final String CREATE_META_TABLE = """
-            CREATE TABLE IF NOT EXISTS themis_meta (
-                key   TEXT PRIMARY KEY,
-                value TEXT
-            )
-            """;
-
     private static final String UPSERT_STATS = """
             INSERT INTO player_stats(uuid, domain, metric, value) VALUES(?,?,?,?)
             ON CONFLICT(uuid, domain, metric) DO UPDATE SET value=excluded.value
@@ -143,7 +136,6 @@ public final class DatabaseManager implements AutoCloseable
                 statement.execute(CREATE_STATS_TABLE);
                 statement.execute(CREATE_STATS_INDEX);
                 statement.execute(CREATE_NAMES_TABLE);
-                statement.execute(CREATE_META_TABLE);
             }
             LOG.info("[Themis] SQLite 已就绪：{}", dbFile.toAbsolutePath());
         }

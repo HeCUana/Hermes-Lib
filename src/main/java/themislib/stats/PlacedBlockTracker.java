@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>记录只存在内存里，带过期时间（默认 30 分钟）与容量上限，避免无限增长；
  * 服务重启后清空——这意味着「重启前放置、重启后挖掉」的方块会被当作自然方块，
- * 这是可接受的精度取舍（详见 README 的注意事项）。</p>
+ * 这是可接受的精度取舍（详见 docs/功能文档.md 第 9 节）。</p>
  */
 public final class PlacedBlockTracker
 {

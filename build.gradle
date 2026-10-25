@@ -36,7 +36,7 @@ dependencies {
     //   plugins { id 'com.github.johnrengelman.shadow' version '8.1.1' }
     //   dependencies { implementation "org.xerial:sqlite-jdbc:${project.sqlite_version}" }
     //   tasks.named('shadowJar') { archiveClassifier = '' ; relocate 'org.sqlite', 'com.themislib.libs.sqlite' }
-    //   tasks.named('remapJar') { dependsOn tasks.named('shadowJar') }
+    //   tasks.named('jar') { dependsOn tasks.named('shadowJar') }   // Loom 1.17 没有 remapJar 任务
     //
     // 代价：relocate 会显著增大最终 jar（原生库无法被 relocate 瘦身），
     // 收益：产出单个 jar，服主无需处理 JiJ 兼容性。

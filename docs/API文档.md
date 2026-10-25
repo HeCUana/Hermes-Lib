@@ -25,10 +25,14 @@ Themis Lib 提供 **三条**互相独立的读取路径，按你的场景选一�
 在下游模组的 `build.gradle` 中：
 
 ```groovy
+repositories {
+    maven { url = file('path/to/themis-lib/publish') }   // Themis Lib 的本地 Maven 仓库
+}
+
 dependencies {
-    modImplementation "com.github.HeCUana:themis-lib:1.0.0"   // 若发布到 Maven
-    // 或直接用本地 jar / 源码目录：
-    // modImplementation files("libs/themis-lib-1.0.0.jar")
+    implementation "com.themislib:themis-lib:1.0.0"      // Loom 1.17 已移除 modImplementation，用 implementation
+    // 或直接用本地 jar：
+    // implementation files("libs/themis-lib-1.0.0.jar")
 }
 ```
 
@@ -215,7 +219,7 @@ public enum DataDomain {
 
 #### `Metric`
 
-29 个指标，完整清单见 [功能文档 §3](功能文档.md)。与 API 相关的两个成员：
+27 个指标，完整清单见 [功能文档 §3](功能文档.md)。与 API 相关的两个成员：
 
 ```java
 public enum Metric {
@@ -291,7 +295,7 @@ ranking_total(playerName, domain)            # 指定域
 
 ```
 // 挖掘榜第一名
-say('挖掘榜首：' + player('Steve', 'blocks_mined'))
+say('挖掘榜首：' + ranking_data('Steve', 'blocks_mined'))
 ```
 
 ```carpet
@@ -340,12 +344,9 @@ CREATE INDEX idx_metric_domain_value ON player_stats(metric, domain, value DESC)
 CREATE TABLE player_names (
     uuid      TEXT    NOT NULL,
     name      TEXT    NOT NULL,
-    last_seen INTEGER NOT NULL,   -- 毫秒时间戳
+    last_seen INTEGER NOT NULL,   -- 毫秒时间戳，最近一次被落库时的时间
     PRIMARY KEY (uuid)
 );
-
--- 元信息（预留）
-CREATE TABLE themis_meta (key TEXT PRIMARY KEY, value TEXT);
 ```
 
 ### C.3 常用查询
@@ -398,7 +399,8 @@ WHERE metric = 'playtime_ticks' AND domain = 'REAL';
 
 * **读**：完全自由，WAL 模式支持并发读。
 * **写**：请**不要**直接改 `player_stats`。Themis Lib 在内存里保存的是绝对累计值，
-  下一次落库会用 UPSERT **覆盖**你的修改。要清数据请走删除整行（Themis 不会复活已删的行）。
+  下一次落库会用 UPSERT **覆盖**你的修改（运行期间被删除的非零行也会被重新写回）。
+  要清数据请先优雅关闭服务端，再删除对应的行——重启后不会复活。
 * **备份**：直接复制 `ranking-stats.db` 即可；若想保证一致，先优雅关闭服务端
   （关闭时会 checkpoint 并截断 WAL）。
 
