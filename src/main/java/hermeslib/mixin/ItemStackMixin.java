@@ -40,7 +40,10 @@ public abstract class ItemStackMixin
         // 客户端的附魔台界面预览同样会调用 enchant（单人世界里与服务端同处一个 JVM），
         // 不限定服务端线程会与真正的附魔重复计数
         if (!manager.isServerThread()) return;
-        manager.addEnchantment();
+        // 传入被附魔的物品本身：统计口径是「附魔行为次数」，
+        // 管理器按「同一 tick 内同一件物品」去重，一次操作只计 1 次
+        ItemStack self = (ItemStack) (Object) this;
+        manager.addEnchantment(self);
     }
 
     @Inject(method = "hurtAndBreak(ILnet/minecraft/server/level/ServerLevel;Lnet/minecraft/server/level/ServerPlayer;Ljava/util/function/Consumer;)V",
