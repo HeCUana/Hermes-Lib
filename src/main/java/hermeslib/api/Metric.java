@@ -78,7 +78,7 @@ public enum Metric
     DISTANCE_TOTAL("distance_total"),
 
     // ---- 其它 ----
-    /** 附魔次数。 */
+    /** 附魔行为次数（附魔台/铁砧/命令一次操作计 1，不按附魔条数计）。 */
     ENCHANTMENTS("enchantments"),
     /** 跳跃次数。 */
     JUMPS("jumps");

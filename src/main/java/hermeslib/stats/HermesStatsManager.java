@@ -4,6 +4,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.storage.LevelResource;
 import hermeslib.api.DataDomain;
@@ -62,6 +63,10 @@ public final class HermesStatsManager implements RankingDataProvider
     }
 
     private volatile EnchantUser lastEnchantUser;
+
+    /** 附魔行为去重：同一 tick 内对同一件物品的连续 enchant() 只计 1 次（主线程访问）。 */
+    private int lastEnchantCountedTick = -1;
+    private ItemStack lastEnchantCountedStack;
 
     private volatile DatabaseManager database;
     private int tickCounter;
@@ -165,13 +170,23 @@ public final class HermesStatsManager implements RankingDataProvider
                 System.currentTimeMillis());
     }
 
-    /** 记一次附魔：归属到 10 秒内最近使用过附魔台/铁砧的玩家（按其有效 UUID 与数据域写入）。 */
-    public void addEnchantment()
+    /**
+     * 记一次附魔行为：归属到 10 秒内最近使用过附魔台/铁砧的玩家（按其有效 UUID 与数据域写入）。
+     *
+     * <p><b>口径：按「行为次数」而非「附魔条数」计数。</b>注入点 {@code ItemStack#enchant}
+     * 每施加一条附魔就触发一次，而附魔台/铁砧的一次操作可能附加多条附魔；
+     * 这里按「同一 tick 内对同一件物品」去重，一次操作只计 1。
+     * 不同物品、不同 tick 的附魔互不影响，正常分开计数。</p>
+     */
+    public void addEnchantment(ItemStack stack)
     {
         if (!isMetricEnabled(Metric.ENCHANTMENTS)) return;
         EnchantUser user = lastEnchantUser;
         if (user == null) return;
         if (System.currentTimeMillis() - user.timestamp() > ENCHANT_ATTRIBUTION_WINDOW) return;
+        if (tickCounter == lastEnchantCountedTick && stack == lastEnchantCountedStack) return;
+        lastEnchantCountedTick = tickCounter;
+        lastEnchantCountedStack = stack;
         addRaw(user.uuid(), user.domain(), Metric.ENCHANTMENTS, 1L);
     }
 

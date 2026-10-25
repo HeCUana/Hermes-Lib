@@ -19,7 +19,9 @@ import java.util.function.Consumer;
  *
  * <p>注入点（MC 26.3 / Mojang 映射）：</p>
  * <ul>
- *   <li>{@code ItemStack#enchant(Holder<Enchantment>, int)} —— 施加一次附魔；</li>
+ *   <li>{@code ItemStack#enchant(Holder<Enchantment>, int)} —— 施加一条附魔；
+ *       管理器按「同一 tick 内同一件物品」去重，一次附魔行为（附魔台/铁砧/命令
+ *       一次附加多条附魔）只计 1 次；</li>
  *   <li>{@code ItemStack#hurtAndBreak(int, ServerLevel, ServerPlayer, Consumer<ItemStack>)} —— 耐久损耗。</li>
  * </ul>
  *
@@ -35,7 +37,7 @@ public abstract class ItemStackMixin
     {
         HermesStatsManager manager = HermesStatsManager.get();
         if (manager == null) return;
-        manager.addEnchantment();
+        manager.addEnchantment((ItemStack) (Object) this);
     }
 
     @Inject(method = "hurtAndBreak(ILnet/minecraft/server/level/ServerLevel;Lnet/minecraft/server/level/ServerPlayer;Ljava/util/function/Consumer;)V",
