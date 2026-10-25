@@ -3,6 +3,7 @@ package hermeslib.i18n;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import hermeslib.HermesLibMod;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -44,10 +45,10 @@ public final class HermesTranslations
 
     private static Map<String, String> loadWithFallback(String lang)
     {
-        Map<String, String> map = loadResource("assets/hermes/lang/" + lang + ".json");
+        Map<String, String> map = loadResource("assets/" + HermesLibMod.MOD_ID + "/lang/" + lang + ".json");
         if (map.isEmpty() && !"en_us".equals(lang))
         {
-            map = loadResource("assets/hermes/lang/en_us.json");
+            map = loadResource("assets/" + HermesLibMod.MOD_ID + "/lang/en_us.json");
         }
         return map;
     }

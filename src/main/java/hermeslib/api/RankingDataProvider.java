@@ -67,4 +67,21 @@ public interface RankingDataProvider
 
     /** 所有已知玩家（内存中出现过的）。 */
     java.util.Collection<UUID> knownPlayers();
+
+    /**
+     * 导入原版（Vanilla）统计数据。
+     *
+     * <p>扫描 {@code <世界>/stats/<UUID>.json}，把原版的累计统计按
+     * {@link hermeslib.stats.VanillaStatMapping} 映射到 Hermes 指标，
+     * <b>覆盖</b>写入内存与数据库（不是累加，因此重复导入幂等、不会翻倍）。</p>
+     *
+     * <p>文件 IO 与 JSON 解析在异步线程执行，完成后切回主线程刷新内存并落库，
+     * 因此本方法返回时数据已经可以在 API 中读到。</p>
+     *
+     * <p>原版没有对应统计的指标（交易、钓获、繁殖、驯服、附魔、工具损坏等）不会被覆盖，
+     * 仍以 Hermes 自己采集的值为准。</p>
+     *
+     * @return 导入结果统计
+     */
+    ImportResult importVanillaStats();
 }

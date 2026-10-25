@@ -6,15 +6,19 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.storage.LevelResource;
+import hermeslib.HermesLibMod;
 import hermeslib.api.DataDomain;
+import hermeslib.api.ImportResult;
 import hermeslib.api.Metric;
 import hermeslib.api.RankingDataProvider;
-import hermeslib.HermesLib;
+import hermeslib.HermesLibMod;
 import hermeslib.rules.HermesRules;
 import hermeslib.storage.DatabaseManager;
 import hermeslib.storage.DatabaseManager.StatRow;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -27,6 +31,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 内存统计中心：所有采集事件的唯一入口，也是对外 API 的实现。
@@ -49,12 +56,26 @@ public final class HermesStatsManager implements RankingDataProvider
     /** 附魔归属的时间窗口：10 秒。 */
     private static final long ENCHANT_ATTRIBUTION_WINDOW = 10_000L;
 
+    /** 数据库文件名（位于世界目录下）。 */
+    public static final String DATABASE_FILE = "hermes-stats.db";
+
+    /** 旧版数据库文件名，启动时若只存在它会自动迁移。 */
+    public static final String LEGACY_DATABASE_FILE = "ranking-stats.db";
+
     private static volatile HermesStatsManager instance;
 
     private final ConcurrentHashMap<StatKey, PlayerStats> data = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, String> names = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, UUID> nameIndex = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, double[]> lastPositions = new ConcurrentHashMap<>();
+
+    /** 原版统计导入专用线程：文件 IO 与 JSON 解析都放在这里，绝不占用游戏主线程。 */
+    private final ExecutorService importExecutor = Executors.newSingleThreadExecutor(runnable ->
+    {
+        Thread thread = new Thread(runnable, "Hermes-Import");
+        thread.setDaemon(true);
+        return thread;
+    });
 
     /** 附魔归属记录：最近一次使用附魔台/铁砧的玩家（有效 UUID + 数据域 + 时间戳）。 */
     private record EnchantUser(UUID uuid, DataDomain domain, long timestamp)
@@ -96,11 +117,44 @@ public final class HermesStatsManager implements RankingDataProvider
     {
         this.server = server;
         // 数据库放在世界目录下，随世界一起保存/迁移
-        Path dbFile = server.getWorldPath(LevelResource.ROOT).resolve("ranking-stats.db");
+        Path worldPath = server.getWorldPath(LevelResource.ROOT);
+        Path dbFile = worldPath.resolve(DATABASE_FILE);
+        migrateLegacyDatabase(worldPath, dbFile);
         DatabaseManager manager = new DatabaseManager(dbFile);
         manager.init();
         this.database = manager;
         loadFromDatabase();
+    }
+
+    /**
+     * 旧版本数据库文件迁移。
+     *
+     * <p>早期版本把库命名为 {@code ranking-stats.db}，现在统一为 {@code hermes-stats.db}。
+     * 若只存在旧文件，会先把旧库打开一次（触发 WAL checkpoint，把 WAL 合并回主库），
+     * 再改名，避免丢数据。</p>
+     */
+    private void migrateLegacyDatabase(Path worldPath, Path target)
+    {
+        Path legacy = worldPath.resolve(LEGACY_DATABASE_FILE);
+        if (!Files.isRegularFile(legacy)) return;
+        if (Files.exists(target))
+        {
+            return;  // 新库已存在，保留旧文件不动
+        }
+        try
+        {
+            try (DatabaseManager legacyDatabase = new DatabaseManager(legacy))
+            {
+                legacyDatabase.init();   // 打开 + 建表
+                legacyDatabase.close();  // checkpoint(TRUNCATE) + 关连接，WAL 已合并进主库
+            }
+            Files.move(legacy, target, StandardCopyOption.REPLACE_EXISTING);
+            HermesLibMod.LOG.info("[Hermes] 数据库已从 {} 迁移到 {}", LEGACY_DATABASE_FILE, DATABASE_FILE);
+        }
+        catch (Exception e)
+        {
+            HermesLibMod.LOG.error("[Hermes] 迁移旧数据库 {} 失败，将以空数据运行", LEGACY_DATABASE_FILE, e);
+        }
     }
 
     /** 服务器关闭：落库 + 关闭连接。 */
@@ -114,6 +168,7 @@ public final class HermesStatsManager implements RankingDataProvider
         {
             manager.close();
         }
+        importExecutor.shutdown();
         uninstall();
     }
 
@@ -164,9 +219,9 @@ public final class HermesStatsManager implements RankingDataProvider
         if (uuid == null || amount == 0L) return;
         if (!isMetricEnabled(metric)) return;
         data.computeIfAbsent(new StatKey(uuid, domain), key -> new PlayerStats()).add(metric, amount);
-        if (HermesLib.DEBUG)
+        if (HermesLibMod.DEBUG)
         {
-            HermesLib.LOG.info("[Hermes][debug] 采集 {} +{} -> uuid={} domain={}",
+            HermesLibMod.LOG.info("[Hermes][debug] 采集 {} +{} -> uuid={} domain={}",
                     metric.dbName(), amount, uuid, domain);
         }
     }
@@ -291,9 +346,9 @@ public final class HermesStatsManager implements RankingDataProvider
             PlacedBlockTracker.prune(System.currentTimeMillis());
             InteractionTracker.prune();
         }
-        else if (HermesLib.DEBUG && tickCounter % 100 == 0)
+        else if (HermesLibMod.DEBUG && tickCounter % 100 == 0)
         {
-            HermesLib.LOG.info("[Hermes][debug] tick={} 数据条目={}", tickCounter, data.size());
+            HermesLibMod.LOG.info("[Hermes][debug] tick={} 数据条目={}", tickCounter, data.size());
         }
     }
 
@@ -439,9 +494,9 @@ public final class HermesStatsManager implements RankingDataProvider
         }
         // last_seen 只刷新本次真正落库的玩家，不触碰历史玩家的记录
         manager.upsert(rows, flushedNames);
-        if (HermesLib.DEBUG)
+        if (HermesLibMod.DEBUG)
         {
-            HermesLib.LOG.info("[Hermes][debug] 落库(周期) 行数={} 玩家数={}", rows.size(), data.size());
+            HermesLibMod.LOG.info("[Hermes][debug] 落库(周期) 行数={} 玩家数={}", rows.size(), data.size());
         }
     }
 
@@ -466,9 +521,9 @@ public final class HermesStatsManager implements RankingDataProvider
         {
             nameOf.put(uuid, name);
         }
-        if (HermesLib.DEBUG)
+        if (HermesLibMod.DEBUG)
         {
-            HermesLib.LOG.info("[Hermes][debug] 落库(玩家退出) uuid={} 行数={}", uuid, rows.size());
+            HermesLibMod.LOG.info("[Hermes][debug] 落库(玩家退出) uuid={} 行数={}", uuid, rows.size());
         }
         manager.upsert(rows, nameOf);
     }
@@ -588,6 +643,167 @@ public final class HermesStatsManager implements RankingDataProvider
             result.add(key.uuid());
         }
         return result;
+    }
+
+    // ==================== 原版统计导入 ====================
+
+    /**
+     * 导入原版（Vanilla）统计数据。
+     *
+     * <p><b>流程</b>：</p>
+     * <ol>
+     *   <li>异步线程：扫描 {@code <世界>/stats/<UUID>.json}，解析并按
+     *       {@link VanillaStatMapping} 映射成 Hermes 指标；</li>
+     *   <li>主线程：把导入值<b>覆盖</b>写进内存（原版统计本身是累计值，累加会让数值翻倍）；</li>
+     *   <li>SQLite 线程：按 UPSERT 覆盖落库（同样是覆盖语义，重复导入幂等）。</li>
+     * </ol>
+     *
+     * <p>玩家名来自 {@code usercache.json} 与在线玩家列表；两者都拿不到时，
+     * 该玩家仍然会被导入，只是没有名字。</p>
+     *
+     * <p><b>线程</b>：本方法会等待导入完成（返回真实的 {@link ImportResult}），
+     * 因此在主线程调用时会有短暂阻塞；玩家文件通常只有几十个，耗时在毫秒级。</p>
+     */
+    @Override
+    public ImportResult importVanillaStats()
+    {
+        MinecraftServer server = this.server;
+        if (server == null)
+        {
+            return new ImportResult(0, 0, 0, List.of("服务器未就绪，无法导入原版统计"));
+        }
+
+        Path worldPath = server.getWorldPath(LevelResource.ROOT);
+        Path statsDir = worldPath.resolve("stats");
+
+        // 名字来源（按可靠性从低到高依次覆盖）：
+        // 1) Hermes 内存里已知的名字（该玩家在模组装上后玩过）
+        // 2) usercache.json（服务端根目录）
+        // 3) 当前在线玩家
+        Map<UUID, String> nameMap = new HashMap<>(names);
+        Path serverRoot = worldPath.getParent();
+        if (serverRoot != null)
+        {
+            nameMap.putAll(VanillaStatsImporter.readUserCache(serverRoot));
+        }
+        for (ServerPlayer player : server.getPlayerList().getPlayers())
+        {
+            String name = playerName(player);
+            if (name != null)
+            {
+                nameMap.put(player.getUUID(), name);
+            }
+        }
+
+        // 1) 异步扫描与解析
+        VanillaStatsImporter.Outcome outcome;
+        try
+        {
+            outcome = importExecutor.submit(() -> VanillaStatsImporter.scan(statsDir, nameMap)).get(120, TimeUnit.SECONDS);
+        }
+        catch (Exception e)
+        {
+            String message = e.getMessage() == null ? e.toString() : e.getMessage();
+            HermesLibMod.LOG.error("[Hermes] 导入原版统计失败", e);
+            return new ImportResult(0, 0, 0, List.of("导入任务失败：" + message));
+        }
+
+        // 2) 组装要写入的行（覆盖语义）
+        List<StatRow> rows = new ArrayList<>();
+        Map<UUID, String> importedNames = new HashMap<>();
+        for (VanillaStatsImporter.PlayerImport imported : outcome.players())
+        {
+            for (Map.Entry<Metric, Long> entry : imported.values().entrySet())
+            {
+                rows.add(new StatRow(imported.uuid().toString(),
+                        DataDomain.REAL.id(), entry.getKey().dbName(), entry.getValue()));
+            }
+            if (imported.name() != null)
+            {
+                importedNames.put(imported.uuid(), imported.name());
+            }
+        }
+
+        // 3) 切回主线程刷新内存（覆盖，不是累加）
+        runOnServerThread(server, () ->
+        {
+            for (VanillaStatsImporter.PlayerImport imported : outcome.players())
+            {
+                PlayerStats stats = data.computeIfAbsent(new StatKey(imported.uuid(), DataDomain.REAL),
+                        key -> new PlayerStats());
+                for (Map.Entry<Metric, Long> entry : imported.values().entrySet())
+                {
+                    stats.set(entry.getKey(), entry.getValue());
+                }
+                if (imported.name() != null)
+                {
+                    names.put(imported.uuid(), imported.name());
+                    nameIndex.put(imported.name().toLowerCase(Locale.ROOT), imported.uuid());
+                }
+            }
+        });
+
+        // 4) 落库（UPSERT 覆盖，幂等）
+        DatabaseManager manager = this.database;
+        if (manager != null)
+        {
+            manager.upsert(rows, importedNames);
+            manager.putMeta("last_vanilla_import", Long.toString(System.currentTimeMillis()));
+            manager.putMeta("last_vanilla_import_players", Integer.toString(outcome.players().size()));
+        }
+
+        HermesLibMod.LOG.info("[Hermes] 原版统计导入完成：成功 {} 人，跳过 {} 个文件，写入 {} 条指标",
+                outcome.players().size(), outcome.skipped(), rows.size());
+
+        return new ImportResult(outcome.players().size(), outcome.skipped(), rows.size(), outcome.errors());
+    }
+
+    /**
+     * 在服务器主线程上执行一段逻辑，并等待其完成。
+     *
+     * <p>若调用方本来就在主线程上，{@code executeIfPossible} 会直接内联执行；
+     * 若服务器正在关闭导致任务排队不上，则退化为在当前线程执行，保证不丢数据。</p>
+     */
+    private static void runOnServerThread(MinecraftServer server, Runnable action)
+    {
+        java.util.concurrent.atomic.AtomicBoolean done = new java.util.concurrent.atomic.AtomicBoolean(false);
+        try
+        {
+            server.executeIfPossible(() ->
+            {
+                try
+                {
+                    action.run();
+                }
+                finally
+                {
+                    done.set(true);
+                }
+            });
+        }
+        catch (Throwable t)
+        {
+            HermesLibMod.LOG.warn("[Hermes] 切回主线程失败，改为在当前线程执行导入刷新", t);
+        }
+        if (!done.get())
+        {
+            try
+            {
+                // 给主线程一点时间；超时则自己执行，避免导入卡死
+                for (int i = 0; i < 100 && !done.get(); i++)
+                {
+                    Thread.sleep(50L);
+                }
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+            }
+            if (!done.get())
+            {
+                action.run();
+            }
+        }
     }
 
     // ==================== 工具 ====================
