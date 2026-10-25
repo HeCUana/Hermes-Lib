@@ -1,4 +1,4 @@
-# Themis Lib
+# Hermes Lib
 
 > 纯后端 **Carpet 附属 Mod**。
 > 监听游戏行为 → 按「玩家 / 假人」分域累计 → 持久化到 SQLite → 通过 Java API（可选 Scarpet 函数）暴露数据。
