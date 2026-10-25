@@ -2,6 +2,7 @@ package themislib.stats;
 
 import themislib.api.Metric;
 
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
@@ -59,6 +60,6 @@ public final class PlayerStats
                 map.put(metric, v);
             }
         }
-        return map;
+        return Collections.unmodifiableMap(map);
     }
 }
