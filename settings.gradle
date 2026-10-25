@@ -9,4 +9,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'themis-lib'
+rootProject.name = 'hermes-lib'

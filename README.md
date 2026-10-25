@@ -18,7 +18,7 @@
 ## 2. 构建
 
 ```bash
-./gradlew build          # 产物在 build/libs/themis-lib-<version>.jar
+./gradlew build          # 产物在 build/libs/hermes-lib-<version>.jar
 ./gradlew runServer      # 开发环境（需要 Carpet 同版本）
 ```
 

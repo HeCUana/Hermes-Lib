@@ -1,14 +1,14 @@
-# Themis Lib · API 文档
+# Hermes Lib · API 文档
 
-> 版本 1.0.0 ｜ 模组 ID：`themis` ｜ 目标环境 Minecraft 26.3 + Carpet 26.3
+> 版本 1.0.0 ｜ 模组 ID：`hermes` ｜ 目标环境 Minecraft 26.3 + Carpet 26.3
 > 本文档面向**下游集成方**（其它模组、Scarpet 脚本、外部工具）。
-> Themis Lib 本身不提供任何查询命令或展示界面，所有读取都通过本文档描述的接口完成。
+> Hermes Lib 本身不提供任何查询命令或展示界面，所有读取都通过本文档描述的接口完成。
 
 ---
 
 ## 0. 接入方式总览
 
-Themis Lib 提供 **三条**互相独立的读取路径，按你的场景选一条即可：
+Hermes Lib 提供 **三条**互相独立的读取路径，按你的场景选一条即可：
 
 | 路径 | 适合 | 稳定性 |
 |---|---|---|
@@ -26,13 +26,13 @@ Themis Lib 提供 **三条**互相独立的读取路径，按你的场景选一�
 
 ```groovy
 repositories {
-    maven { url = file('path/to/themis-lib/publish') }   // Themis Lib 的本地 Maven 仓库
+    maven { url = file('path/to/hermes-lib/publish') }   // Hermes Lib 的本地 Maven 仓库
 }
 
 dependencies {
-    implementation "com.themislib:themis-lib:1.0.0"      // Loom 1.17 已移除 modImplementation，用 implementation
+    implementation "com.hermeslib:hermes-lib:1.0.0"      // Loom 1.17 已移除 modImplementation，用 implementation
     // 或直接用本地 jar：
-    // implementation files("libs/themis-lib-1.0.0.jar")
+    // implementation files("libs/hermes-lib-1.0.0.jar")
 }
 ```
 
@@ -41,7 +41,7 @@ dependencies {
 ```json
 {
   "depends": {
-    "themis": "*"
+    "hermes": "*"
   }
 }
 ```
@@ -49,17 +49,17 @@ dependencies {
 ### A.2 获取 Provider
 
 ```java
-import themislib.api.*;
+import hermeslib.api.*;
 
 // 方式一：可能为 null，先判断
-RankingDataProvider stats = ThemisApi.provider();
+RankingDataProvider stats = HermesApi.provider();
 if (stats != null) { /* 可用 */ }
 
 // 方式二：判断是否就绪
-if (ThemisApi.isReady()) { /* 可用 */ }
+if (HermesApi.isReady()) { /* 可用 */ }
 
 // 方式三：未就绪直接抛异常（IllegalStateException）
-RankingDataProvider stats = ThemisApi.require();
+RankingDataProvider stats = HermesApi.require();
 ```
 
 **生命周期契约**：
@@ -71,12 +71,12 @@ RankingDataProvider stats = ThemisApi.require();
 | 服务器关闭（`onServerClosed`） | 置空，`provider()` 返回 `null` |
 
 > 单人游戏里服务器可能被反复加载/卸载，请**不要**把 Provider 实例缓存到静态字段里长期使用，
-> 每次用的时候重新 `ThemisApi.provider()` 取。
+> 每次用的时候重新 `HermesApi.provider()` 取。
 
 ### A.3 接口总览
 
 ```java
-package themislib.api;
+package hermeslib.api;
 
 public interface RankingDataProvider
 {
@@ -233,20 +233,20 @@ public enum Metric {
 
 ```java
 import net.minecraft.server.level.ServerPlayer;
-import themislib.api.*;
+import hermeslib.api.*;
 
 public class RewardHandler
 {
     public void onServerTick(ServerPlayer player)
     {
-        RankingDataProvider stats = ThemisApi.provider();
+        RankingDataProvider stats = HermesApi.provider();
         if (stats == null) return;                       // 服务器还没起来
 
         // 1) 查这个玩家在「真人域」挖了多少方块
         UUID uuid = stats.effectiveUuid(player);
         long mined = stats.getValue(uuid, DataDomain.REAL, Metric.BLOCKS_MINED);
 
-        // 2) 给奖励（展示逻辑由你自己决定，Themis 不管）
+        // 2) 给奖励（展示逻辑由你自己决定，Hermes 不管）
         if (mined >= 1000 && !rewardedToday.contains(uuid)) {
             giveReward(player);
             rewardedToday.add(uuid);
@@ -256,7 +256,7 @@ public class RewardHandler
     // 3) 做排行榜（自己渲染 UI 或发给客户端）
     public List<RankingDataProvider.RankedEntry> top10()
     {
-        RankingDataProvider stats = ThemisApi.provider();
+        RankingDataProvider stats = HermesApi.provider();
         return stats == null ? List.of()
                 : stats.top(Metric.BLOCKS_MINED, DataDomain.REAL, 10);
     }
@@ -398,7 +398,7 @@ WHERE metric = 'playtime_ticks' AND domain = 'REAL';
 ### C.5 读写边界
 
 * **读**：完全自由，WAL 模式支持并发读。
-* **写**：请**不要**直接改 `player_stats`。Themis Lib 在内存里保存的是绝对累计值，
+* **写**：请**不要**直接改 `player_stats`。Hermes Lib 在内存里保存的是绝对累计值，
   下一次落库会用 UPSERT **覆盖**你的修改（运行期间被删除的非零行也会被重新写回）。
   要清数据请先优雅关闭服务端，再删除对应的行——重启后不会复活。
 * **备份**：直接复制 `ranking-stats.db` 即可；若想保证一致，先优雅关闭服务端
@@ -417,13 +417,13 @@ WHERE metric = 'playtime_ticks' AND domain = 'REAL';
 | `Metric.dbName()` | 与数据库列值一一对应 |
 | `DataDomain.id()` | 与数据库列值一一对应 |
 | 表名与列名 | `player_stats` / `player_names` |
-| Java 包名与接口名 | `themislib.api.*` |
+| Java 包名与接口名 | `hermeslib.api.*` |
 
 **可能变化的部分**（不保证）：Java 内部实现细节、新增的枚举常量、
 新增的方法（新增不会破坏兼容性，但请不要依赖枚举的 `ordinal()` 顺序）。
 
 > 读数据库时遇到**未知 metric** 请忽略该行（而不是报错）——
-> 新版 Themis 增加了指标时，旧版读取方应当优雅跳过。
+> 新版 Hermes 增加了指标时，旧版读取方应当优雅跳过。
 
 ---
 
@@ -431,9 +431,9 @@ WHERE metric = 'playtime_ticks' AND domain = 'REAL';
 
 | 现象 | 原因与处理 |
 |---|---|
-| `ThemisApi.provider()` 返回 `null` | 服务器尚未加载完成或已关闭；用 `isReady()` 判断 |
+| `HermesApi.provider()` 返回 `null` | 服务器尚未加载完成或已关闭；用 `isReady()` 判断 |
 | 查某玩家全是 0 | 该玩家从未产生过该指标的记录；确认 UUID 是否用了 `effectiveUuid(player)` 的结果 |
 | 假人数据混进了真人榜 | 检查 `rankingSeparateFakePlayers` 规则；即便关闭，假人 UUID 也是独立的，不会覆盖真人 |
 | SQL 读到的数据比游戏里看到的少 | 内存数据最长 5 分钟才落库一次；玩家退出或关服会立即落库 |
-| 数据库打不开 | 服务端日志会有 `[Themis] 无法打开 SQLite 数据库`；此时模组以空数据继续运行，不会崩服 |
-| 想看采集细节 | 启动加 `-Dthemis.debug=true`，会输出每次采集与落库 |
+| 数据库打不开 | 服务端日志会有 `[Hermes] 无法打开 SQLite 数据库`；此时模组以空数据继续运行，不会崩服 |
+| 想看采集细节 | 启动加 `-Dhermes.debug=true`，会输出每次采集与落库 |

@@ -1,0 +1,22 @@
+{
+  "required": true,
+  "package": "hermeslib.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ServerPlayerGameModeMixin",
+    "BlockItemMixin",
+    "LivingEntityMixin",
+    "PlayerMixin",
+    "ServerPlayerMixin",
+    "AnimalMixin",
+    "TamableAnimalMixin",
+    "ItemEntityMixin",
+    "ResultSlotMixin",
+    "MerchantResultSlotMixin",
+    "FishingHookMixin",
+    "ItemStackMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

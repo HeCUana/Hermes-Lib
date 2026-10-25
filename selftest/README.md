@@ -1,13 +1,13 @@
-# Themis Lib 自测数据包
+# Hermes Lib 自测数据包
 
-把 `datapack/themistest` 放进世界目录的 `datapacks/` 下，重启服务端即可自动执行：
+把 `datapack/hermestest` 放进世界目录的 `datapacks/` 下，重启服务端即可自动执行：
 
 ```
-世界目录/datapacks/themistest/
+世界目录/datapacks/hermestest/
 ├── pack.mcmeta
 └── data/
     ├── minecraft/tags/function/load.json
-    └── themistest/function/{load,spawn,move,damage,kill}.mcfunction
+    └── hermestest/function/{load,spawn,move,damage,kill}.mcfunction
 ```
 
 执行内容（服务器加载后自动触发）：
