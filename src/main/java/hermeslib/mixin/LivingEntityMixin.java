@@ -13,12 +13,14 @@ import hermeslib.collector.HermesCollectors;
 import hermeslib.stats.HermesStatsManager;
 
 /**
- * 采集「死亡」「击杀」「造成伤害」。
+ * 采集「击杀生物」「造成伤害」。
  *
  * <p>注入点（MC 26.3 / Mojang 映射）：</p>
  * <ul>
- *   <li>{@code LivingEntity#die(DamageSource)} —— 死亡结算（玩家死亡也会经过这里：
- *       {@code Player#die} → {@code Avatar#die} → {@code LivingEntity#die}，只会触发一次）；</li>
+ *   <li>{@code LivingEntity#die(DamageSource)} —— 生物死亡结算，这里只做「击杀生物」归属。
+ *       <b>注意</b>：26.3 中 {@code ServerPlayer#die} 是完全覆写且不调用父类实现，
+ *       玩家死亡根本不会经过这里 —— 玩家死亡数与击杀玩家数由 {@link ServerPlayerMixin}
+ *       挂在 {@code ServerPlayer#die} 上统计；</li>
  *   <li>{@code LivingEntity#actuallyHurt(ServerLevel, DamageSource, float)} —— 实际扣血，
  *       这里统计「玩家对生物造成的伤害」。</li>
  * </ul>
@@ -37,21 +39,11 @@ public abstract class LivingEntityMixin
 
         LivingEntity self = (LivingEntity) (Object) this;
 
-        // 死亡数（玩家死亡也会走到这里）
-        if (self instanceof ServerPlayer victim)
+        // 击杀归属：生物受害者 → 击杀生物（玩家受害者不走这里，见 ServerPlayerMixin）
+        if (!(self instanceof ServerPlayer))
         {
-            manager.add(victim, Metric.DEATHS, 1L);
-        }
-
-        // 击杀归属
-        ServerPlayer killer = HermesCollectors.attackerOf(source);
-        if (killer != null)
-        {
-            if (self instanceof ServerPlayer)
-            {
-                manager.add(killer, Metric.PLAYER_KILLS, 1L);
-            }
-            else
+            ServerPlayer killer = HermesCollectors.attackerOf(source);
+            if (killer != null)
             {
                 manager.add(killer, Metric.MOB_KILLS, 1L);
             }
