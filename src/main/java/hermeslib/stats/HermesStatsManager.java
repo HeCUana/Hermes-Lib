@@ -64,6 +64,7 @@ public final class HermesStatsManager implements RankingDataProvider
     private volatile EnchantUser lastEnchantUser;
 
     private volatile DatabaseManager database;
+    private volatile MinecraftServer server;
     private int tickCounter;
 
     // ==================== 生命周期 ====================
@@ -93,6 +94,7 @@ public final class HermesStatsManager implements RankingDataProvider
      */
     public void start(MinecraftServer server)
     {
+        this.server = server;
         // 数据库放在世界目录下，随世界一起保存/迁移
         Path dbFile = server.getWorldPath(LevelResource.ROOT).resolve("ranking-stats.db");
         DatabaseManager manager = new DatabaseManager(dbFile);
@@ -107,11 +109,26 @@ public final class HermesStatsManager implements RankingDataProvider
         flushAll();
         DatabaseManager manager = this.database;
         this.database = null;
+        this.server = null;
         if (manager != null)
         {
             manager.close();
         }
         uninstall();
+    }
+
+    /**
+     * 当前调用是否发生在服务端主线程上。
+     *
+     * <p>模组的 {@code environment} 为 {@code *}，因此 Mixin 在客户端也会生效；
+     * 单人世界里客户端与集成服务端同处一个 JVM，共享同一份内存统计。
+     * 凡是「客户端也会触发的原版逻辑」（例如附魔台界面的预览同样会调用
+     * {@code ItemStack#enchant}），必须用这个判断挡掉，否则会与服务端重复计数。</p>
+     */
+    public boolean isServerThread()
+    {
+        MinecraftServer current = this.server;
+        return current != null && current.isSameThread();
     }
 
     // ==================== 写入 ====================

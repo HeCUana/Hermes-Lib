@@ -35,6 +35,9 @@ public abstract class ItemStackMixin
     {
         HermesStatsManager manager = HermesStatsManager.get();
         if (manager == null) return;
+        // 客户端的附魔台界面预览同样会调用 enchant（单人世界里与服务端同处一个 JVM），
+        // 不限定服务端线程会与真正的附魔重复计数
+        if (!manager.isServerThread()) return;
         manager.addEnchantment();
     }
 
