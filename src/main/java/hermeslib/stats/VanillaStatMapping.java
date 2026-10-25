@@ -55,6 +55,9 @@ public final class VanillaStatMapping
         map.put("minecraft:walk_one_cm", Metric.DISTANCE_WALK);
         map.put("minecraft:swim_one_cm", Metric.DISTANCE_SWIM);
         map.put("minecraft:aviate_one_cm", Metric.DISTANCE_ELYTRA);
+        // 注意：原版的 minecraft:fish_caught 只统计「真正的鱼」（ItemTags.FISHES），
+        // 垃圾与宝藏不算；而 Hermes 的钓鱼指标按「实际钓到的物品总数」统计（含垃圾与宝藏）。
+        // 两者口径不同，导入时**不映射**该统计项，避免用较小的值覆盖实时采集的结果。
         return Collections.unmodifiableMap(map);
     }
 
