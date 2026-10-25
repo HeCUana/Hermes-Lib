@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -62,6 +63,14 @@ public final class DatabaseManager implements AutoCloseable
                 name      TEXT    NOT NULL,
                 last_seen INTEGER NOT NULL,
                 PRIMARY KEY (uuid)
+            )
+            """;
+
+    /** 元信息表（键值对），存放导入时间、模式版本之类的附加信息。 */
+    private static final String CREATE_META_TABLE = """
+            CREATE TABLE IF NOT EXISTS hermes_meta (
+                key   TEXT PRIMARY KEY,
+                value TEXT
             )
             """;
 
@@ -136,6 +145,7 @@ public final class DatabaseManager implements AutoCloseable
                 statement.execute(CREATE_STATS_TABLE);
                 statement.execute(CREATE_STATS_INDEX);
                 statement.execute(CREATE_NAMES_TABLE);
+                statement.execute(CREATE_META_TABLE);
             }
             LOG.info("[Hermes] SQLite 已就绪：{}", dbFile.toAbsolutePath());
         }
@@ -179,8 +189,7 @@ public final class DatabaseManager implements AutoCloseable
     }
 
     /** 读取玩家名索引。 */
-    public Map<UUID, String> loadNames()
-    {
+    public Map<UUID, String> loadNames()    {
         try
         {
             return executor.submit(this::doLoadNames).get(120, TimeUnit.SECONDS);
@@ -216,6 +225,62 @@ public final class DatabaseManager implements AutoCloseable
             LOG.error("[Hermes] 读取 player_names 失败", e);
         }
         return result;
+    }
+
+    /**
+     * 写入一条元信息（异步）。
+     *
+     * @return 提交完成的 future；失败只记日志
+     */
+    public CompletableFuture<Void> putMeta(String key, String value)
+    {
+        if (key == null) return CompletableFuture.completedFuture(null);
+        return CompletableFuture.runAsync(() ->
+        {
+            if (connection == null) return;
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "INSERT INTO hermes_meta(key, value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value"))
+            {
+                ps.setString(1, key);
+                ps.setString(2, value);
+                ps.executeUpdate();
+            }
+            catch (SQLException e)
+            {
+                LOG.error("[Hermes] 写入 hermes_meta 失败", e);
+            }
+        }, executor);
+    }
+
+    /** 读取一条元信息；不存在或读取失败时返回空。 */
+    public Optional<String> getMeta(String key)
+    {
+        if (key == null) return Optional.empty();
+        try
+        {
+            return executor.submit(() ->
+            {
+                if (connection == null) return Optional.<String>empty();
+                try (PreparedStatement ps = connection.prepareStatement("SELECT value FROM hermes_meta WHERE key = ?"))
+                {
+                    ps.setString(1, key);
+                    try (ResultSet rs = ps.executeQuery())
+                    {
+                        return rs.next() ? Optional.ofNullable(rs.getString(1)) : Optional.<String>empty();
+                    }
+                }
+                catch (SQLException e)
+                {
+                    LOG.error("[Hermes] 读取 hermes_meta 失败", e);
+                    return Optional.<String>empty();
+                }
+            }).get(30, TimeUnit.SECONDS);
+        }
+        catch (Exception e)
+        {
+            LOG.error("[Hermes] 读取 hermes_meta 失败", e);
+            return Optional.empty();
+        }
     }
 
     /**

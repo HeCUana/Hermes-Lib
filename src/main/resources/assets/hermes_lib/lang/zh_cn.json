@@ -1,0 +1,87 @@
+{
+  "hermesLib.category.ranking": "数据统计",
+
+  "hermesLib.rule.rankingEnabled.name": "启用统计",
+  "hermesLib.rule.rankingEnabled.desc": "Hermes Lib 的总开关。关闭后不再采集任何指标。",
+
+  "hermesLib.rule.rankingTrackPlayTime.name": "统计在线时长",
+  "hermesLib.rule.rankingTrackPlayTime.desc": "统计每个玩家（及假人）的在线时长。",
+
+  "hermesLib.rule.rankingTrackBlocksMined.name": "统计挖掘量",
+  "hermesLib.rule.rankingTrackBlocksMined.desc": "统计每个玩家破坏的方块数量。",
+
+  "hermesLib.rule.rankingTrackBlocksPlaced.name": "统计放置量",
+  "hermesLib.rule.rankingTrackBlocksPlaced.desc": "统计每个玩家放置的方块数量。",
+
+  "hermesLib.rule.rankingTrackMobKills.name": "统计生物击杀",
+  "hermesLib.rule.rankingTrackMobKills.desc": "统计每个玩家击杀的生物数量。",
+
+  "hermesLib.rule.rankingTrackPlayerKills.name": "统计玩家击杀",
+  "hermesLib.rule.rankingTrackPlayerKills.desc": "统计每个玩家击杀的玩家数量。",
+
+  "hermesLib.rule.rankingTrackDeaths.name": "统计死亡数",
+  "hermesLib.rule.rankingTrackDeaths.desc": "统计每个玩家的死亡次数。",
+
+  "hermesLib.rule.rankingTrackVillagerTrades.name": "统计村民交易",
+  "hermesLib.rule.rankingTrackVillagerTrades.desc": "统计每个玩家完成的村民交易笔数。",
+
+  "hermesLib.rule.rankingTrackFishCaught.name": "统计钓获次数",
+  "hermesLib.rule.rankingTrackFishCaught.desc": "统计每个玩家收竿钓起战利品的次数。",
+
+  "hermesLib.rule.rankingTrackElytraDistance.name": "统计鞘翅飞行距离",
+  "hermesLib.rule.rankingTrackElytraDistance.desc": "统计鞘翅飞行距离，单位为厘米（1 格 = 100）。",
+
+  "hermesLib.rule.rankingTrackDamageDealt.name": "统计造成伤害",
+  "hermesLib.rule.rankingTrackDamageDealt.desc": "统计每个玩家造成的伤害总量。",
+
+  "hermesLib.rule.rankingTrackDamageTaken.name": "统计受到伤害",
+  "hermesLib.rule.rankingTrackDamageTaken.desc": "统计每个玩家受到的伤害总量。",
+
+  "hermesLib.rule.rankingTrackMovement.name": "统计移动距离",
+  "hermesLib.rule.rankingTrackMovement.desc": "统计步行、疾跑、游泳、骑乘与鞘翅距离，单位为厘米（1 格 = 100）。",
+
+  "hermesLib.rule.rankingTrackItemsCrafted.name": "统计制作数量",
+  "hermesLib.rule.rankingTrackItemsCrafted.desc": "统计合成产出的物品数量。",
+
+  "hermesLib.rule.rankingTrackItemsPickedUp.name": "统计拾取物品",
+  "hermesLib.rule.rankingTrackItemsPickedUp.desc": "统计从地面捡起的物品数量。",
+
+  "hermesLib.rule.rankingTrackItemsDropped.name": "统计丢弃物品",
+  "hermesLib.rule.rankingTrackItemsDropped.desc": "统计主动丢到地上的物品数量。",
+
+  "hermesLib.rule.rankingTrackItemsUsed.name": "统计使用物品",
+  "hermesLib.rule.rankingTrackItemsUsed.desc": "统计每个玩家使用物品的次数。",
+
+  "hermesLib.rule.rankingTrackItemsBroken.name": "统计工具损坏",
+  "hermesLib.rule.rankingTrackItemsBroken.desc": "统计耐久损耗次数，以及彻底损坏（碎裂）的工具/装备数量。",
+
+  "hermesLib.rule.rankingTrackAnimalsBred.name": "统计动物繁殖",
+  "hermesLib.rule.rankingTrackAnimalsBred.desc": "统计每个玩家繁殖动物的次数。",
+
+  "hermesLib.rule.rankingTrackAnimalsTamed.name": "统计驯服次数",
+  "hermesLib.rule.rankingTrackAnimalsTamed.desc": "统计每个玩家驯服动物的数量。",
+
+  "hermesLib.rule.rankingTrackEnchantments.name": "统计附魔次数",
+  "hermesLib.rule.rankingTrackEnchantments.desc": "统计每个玩家施加附魔的次数。",
+
+  "hermesLib.rule.rankingTrackJumps.name": "统计跳跃次数",
+  "hermesLib.rule.rankingTrackJumps.desc": "统计每个玩家的跳跃次数。",
+
+  "hermesLib.rule.rankingMinedNaturalOnly.name": "仅统计自然方块",
+  "hermesLib.rule.rankingMinedNaturalOnly.desc": "只统计并非由玩家放置的方块，杜绝「放置后立刻挖掉」的刷榜行为。",
+
+  "hermesLib.rule.rankingSeparateFakePlayers.name": "假人数据单独存储",
+  "hermesLib.rule.rankingSeparateFakePlayers.desc": "把假人数据写入 FAKE 数据域而不是 REAL。关闭时假人数据仍使用独立 UUID，不会覆盖真实玩家的数据。",
+
+  "hermesLib.rule.rankingTrackSurvival.name": "统计生存模式玩家",
+  "hermesLib.rule.rankingTrackSurvival.desc": "是否统计处于生存模式的玩家（真人与假人一视同仁）。关闭后该模式下所有玩家不再产生任何统计。",
+
+  "hermesLib.rule.rankingTrackAdventure.name": "统计冒险模式玩家",
+  "hermesLib.rule.rankingTrackAdventure.desc": "是否统计处于冒险模式的玩家（真人与假人一视同仁）。关闭后该模式下所有玩家不再产生任何统计。",
+
+  "hermesLib.rule.rankingTrackSpectator.name": "统计旁观模式玩家",
+  "hermesLib.rule.rankingTrackSpectator.desc": "是否统计处于旁观模式的玩家（真人与假人一视同仁）。关闭后该模式下所有玩家不再产生任何统计。",
+
+  "hermesLib.rule.rankingTrackCreative.name": "统计创造模式玩家",
+  "hermesLib.rule.rankingTrackCreative.desc": "是否统计处于创造模式的玩家（真人与假人一视同仁）。关闭后该模式下所有玩家不再产生任何统计。"
+}

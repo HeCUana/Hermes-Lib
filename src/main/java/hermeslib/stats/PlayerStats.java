@@ -33,6 +33,25 @@ public final class PlayerStats
         values[metric.ordinal()].add(amount);
     }
 
+    /**
+     * 覆盖式写入单个指标。
+     *
+     * <p>用于原版统计导入：原版统计本身是「累计值」，导入时应当
+     * <b>覆盖</b>而不是累加，否则重复导入会让数值翻倍。</p>
+     *
+     * <p>只在服务器主线程调用（导入在主线程刷新内存），因此
+     * {@code reset()} + {@code add()} 的组合不存在与采集事件竞争的问题。</p>
+     */
+    public void set(Metric metric, long value)
+    {
+        LongAdder adder = values[metric.ordinal()];
+        adder.reset();
+        if (value != 0L)
+        {
+            adder.add(value);
+        }
+    }
+
     public long get(Metric metric)
     {
         return values[metric.ordinal()].sum();

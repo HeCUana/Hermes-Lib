@@ -1,0 +1,87 @@
+{
+  "hermesLib.category.ranking": "Ranking",
+
+  "hermesLib.rule.rankingEnabled.name": "Ranking enabled",
+  "hermesLib.rule.rankingEnabled.desc": "Master switch for all Hermes Lib data collection. When disabled no metric is collected at all.",
+
+  "hermesLib.rule.rankingTrackPlayTime.name": "Track play time",
+  "hermesLib.rule.rankingTrackPlayTime.desc": "Collect how long each player (or fake player) has been online.",
+
+  "hermesLib.rule.rankingTrackBlocksMined.name": "Track blocks mined",
+  "hermesLib.rule.rankingTrackBlocksMined.desc": "Collect how many blocks each player has broken.",
+
+  "hermesLib.rule.rankingTrackBlocksPlaced.name": "Track blocks placed",
+  "hermesLib.rule.rankingTrackBlocksPlaced.desc": "Collect how many blocks each player has placed.",
+
+  "hermesLib.rule.rankingTrackMobKills.name": "Track mob kills",
+  "hermesLib.rule.rankingTrackMobKills.desc": "Collect how many mobs each player has killed.",
+
+  "hermesLib.rule.rankingTrackPlayerKills.name": "Track player kills",
+  "hermesLib.rule.rankingTrackPlayerKills.desc": "Collect how many players each player has killed.",
+
+  "hermesLib.rule.rankingTrackDeaths.name": "Track deaths",
+  "hermesLib.rule.rankingTrackDeaths.desc": "Collect how many times each player has died.",
+
+  "hermesLib.rule.rankingTrackVillagerTrades.name": "Track villager trades",
+  "hermesLib.rule.rankingTrackVillagerTrades.desc": "Collect how many villager trades each player has made.",
+
+  "hermesLib.rule.rankingTrackFishCaught.name": "Track fish caught",
+  "hermesLib.rule.rankingTrackFishCaught.desc": "Collect how many times each player has reeled in a fishing hook.",
+
+  "hermesLib.rule.rankingTrackElytraDistance.name": "Track elytra distance",
+  "hermesLib.rule.rankingTrackElytraDistance.desc": "Collect the distance flown with an elytra, in centi-blocks.",
+
+  "hermesLib.rule.rankingTrackDamageDealt.name": "Track damage dealt",
+  "hermesLib.rule.rankingTrackDamageDealt.desc": "Collect the amount of damage each player has dealt.",
+
+  "hermesLib.rule.rankingTrackDamageTaken.name": "Track damage taken",
+  "hermesLib.rule.rankingTrackDamageTaken.desc": "Collect the amount of damage each player has taken.",
+
+  "hermesLib.rule.rankingTrackMovement.name": "Track movement",
+  "hermesLib.rule.rankingTrackMovement.desc": "Collect walking, sprinting, swimming, riding and elytra distance, in centi-blocks.",
+
+  "hermesLib.rule.rankingTrackItemsCrafted.name": "Track items crafted",
+  "hermesLib.rule.rankingTrackItemsCrafted.desc": "Collect the number of items produced by crafting.",
+
+  "hermesLib.rule.rankingTrackItemsPickedUp.name": "Track items picked up",
+  "hermesLib.rule.rankingTrackItemsPickedUp.desc": "Collect the number of items picked up from the ground.",
+
+  "hermesLib.rule.rankingTrackItemsDropped.name": "Track items dropped",
+  "hermesLib.rule.rankingTrackItemsDropped.desc": "Collect the number of items dropped on the ground.",
+
+  "hermesLib.rule.rankingTrackItemsUsed.name": "Track items used",
+  "hermesLib.rule.rankingTrackItemsUsed.desc": "Collect how many times each player has used an item.",
+
+  "hermesLib.rule.rankingTrackItemsBroken.name": "Track items damaged and broken",
+  "hermesLib.rule.rankingTrackItemsBroken.desc": "Collect durability damage events and tools or armour that broke completely.",
+
+  "hermesLib.rule.rankingTrackAnimalsBred.name": "Track animals bred",
+  "hermesLib.rule.rankingTrackAnimalsBred.desc": "Collect how many times each player has bred animals.",
+
+  "hermesLib.rule.rankingTrackAnimalsTamed.name": "Track animals tamed",
+  "hermesLib.rule.rankingTrackAnimalsTamed.desc": "Collect how many animals each player has tamed.",
+
+  "hermesLib.rule.rankingTrackEnchantments.name": "Track enchantments",
+  "hermesLib.rule.rankingTrackEnchantments.desc": "Collect how many enchantments each player has applied.",
+
+  "hermesLib.rule.rankingTrackJumps.name": "Track jumps",
+  "hermesLib.rule.rankingTrackJumps.desc": "Collect how many times each player has jumped.",
+
+  "hermesLib.rule.rankingMinedNaturalOnly.name": "Only count natural blocks as mined",
+  "hermesLib.rule.rankingMinedNaturalOnly.desc": "Only count blocks that were not placed by a player. Prevents place-then-mine farming.",
+
+  "hermesLib.rule.rankingSeparateFakePlayers.name": "Store fake players separately",
+  "hermesLib.rule.rankingSeparateFakePlayers.desc": "Store fake player data in the FAKE domain instead of REAL. When disabled fake data still keeps its own UUID, so real player data is never overwritten.",
+
+  "hermesLib.rule.rankingTrackSurvival.name": "Track survival mode players",
+  "hermesLib.rule.rankingTrackSurvival.desc": "Whether to track players in survival mode (real players and fake players alike). When disabled, players in this mode produce no stats at all.",
+
+  "hermesLib.rule.rankingTrackAdventure.name": "Track adventure mode players",
+  "hermesLib.rule.rankingTrackAdventure.desc": "Whether to track players in adventure mode (real players and fake players alike). When disabled, players in this mode produce no stats at all.",
+
+  "hermesLib.rule.rankingTrackSpectator.name": "Track spectator mode players",
+  "hermesLib.rule.rankingTrackSpectator.desc": "Whether to track players in spectator mode (real players and fake players alike). When disabled, players in this mode produce no stats at all.",
+
+  "hermesLib.rule.rankingTrackCreative.name": "Track creative mode players",
+  "hermesLib.rule.rankingTrackCreative.desc": "Whether to track players in creative mode (real players and fake players alike). When disabled, players in this mode produce no stats at all."
+}

@@ -56,6 +56,8 @@ loom {
         server {
             vmArgs "-Dmixin.debug.audit=true"
             vmArgs "-Dhermes.debug=true"
+            // 开发环境启动时自动导入一次原版统计（幂等，便于验证导入链路）
+            vmArgs "-Dhermes.importVanillaOnStart=true"
         }
     }
 }

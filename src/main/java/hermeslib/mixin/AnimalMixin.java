@@ -36,6 +36,9 @@ public abstract class AnimalMixin
     @Inject(method = "mobInteract", at = @At("HEAD"))
     private void hermes$onMobInteract(Player player, InteractionHand hand, CallbackInfoReturnable<InteractionResult> cir)
     {
+        // InteractionTracker 是进程级共享结构（单人世界里客户端与服务端同处一个 JVM），
+        // 只接受服务端玩家的交互记录，避免客户端侧的 LocalPlayer 污染繁殖归属
+        if (!(player instanceof ServerPlayer)) return;
         InteractionTracker.record(((Animal) (Object) this).getUUID(), player.getUUID());
     }
 

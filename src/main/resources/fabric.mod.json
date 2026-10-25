@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "hermes",
+  "id": "hermes_lib",
   "version": "${version}",
 
-  "name": "Hermes Lib",
+  "name": "Hermes-lib",
   "description": "纯数据记录与接口提供型 Carpet 附属模组：采集游戏行为 → 按玩家/假人分域累计 → 持久化到 SQLite → 通过 Java API（可选 Scarpet 函数）暴露数据。不提供任何查询命令、排行榜、计分板或 UI。",
   "authors": [
     "Hermes"
@@ -15,7 +15,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "hermeslib.HermesLib::onInitialize"
+      "hermeslib.HermesLibMod::onInitialize"
     ]
   },
   "mixins": [

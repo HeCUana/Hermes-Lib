@@ -41,7 +41,7 @@ dependencies {
 ```json
 {
   "depends": {
-    "hermes": "*"
+    "hermes_lib": "*"
   }
 }
 ```
@@ -92,6 +92,7 @@ public interface RankingDataProvider
     DataDomain domainOf(Player player);
     UUID effectiveUuid(Player player);
     Collection<UUID> knownPlayers();
+    ImportResult importVanillaStats();   // 导入原版统计（覆盖语义，幂等）
 }
 ```
 
@@ -202,6 +203,47 @@ UUID uuid = stats.effectiveUuid(player);         // 写库时实际使用的 UUI
 ```java
 int tracked = stats.knownPlayers().size();
 ```
+
+#### `importVanillaStats()` —— 导入原版统计（重点新增）
+
+把 Minecraft 原版自己记录的统计导入 Hermes，让「装模组之前」的历史数据也能进入排行榜。
+
+```java
+ImportResult result = stats.importVanillaStats();
+System.out.println("成功 " + result.playersProcessed()
+        + " 人，跳过 " + result.playersSkipped()
+        + " 个文件，写入 " + result.metricsImported() + " 条指标");
+result.errors().forEach(System.out::println);
+```
+
+```java
+public record ImportResult(
+    int playersProcessed,   // 成功处理的玩家文件数
+    int playersSkipped,     // 跳过（解析失败/版本不兼容/无可识别统计项）的文件数
+    int metricsImported,    // 写入的指标总条数
+    List<String> errors     // 错误摘要
+) {}
+```
+
+| 项 | 行为 |
+|---|---|
+| 数据来源 | `<世界>/stats/<UUID>.json`（每个进过世界的玩家一个文件，含已离线玩家） |
+| 名字来源 | Hermes 已知名单 → `usercache.json` → 在线玩家列表；都拿不到则只导数据不写名字 |
+| 写入语义 | **覆盖**（原版统计本身是累计值，累加会让数值翻倍）；重复导入幂等 |
+| 数据域 | 一律 `REAL` |
+| 线程 | 文件 IO 与 JSON 解析在 `Hermes-Import` 线程；完成后切回主线程刷新内存并落库 |
+| 返回时机 | 返回时数据**已经**可以在 API 中读到 |
+| 失败 | 解析失败/版本不兼容的文件计入 `playersSkipped` 并写进 `errors`，不影响其它玩家 |
+| 未识别项 | 原版新增的统计项一律跳过，不报错（向前兼容） |
+
+> **注意**：本方法会等待导入完成，因此**在主线程调用时会有短暂阻塞**（玩家文件通常只有几十个，
+> 耗时在毫秒级）。如果下游是「玩家执行一次命令就导入」这类场景，建议放到自己的异步线程里调用。
+>
+> 服务端也可以用启动参数 `-Dhermes.importVanillaOnStart=true` 在启动时自动导入一次。
+
+映射规则见 [功能文档 §5.4](功能文档.md)，由 `hermeslib.stats.VanillaStatMapping` 集中管理。
+原版没有对应统计的指标（交易、钓获、繁殖、驯服、附魔、工具损坏等）不会被覆盖，
+仍以 Hermes 自己采集的值为准。
 
 ### A.5 枚举
 
@@ -318,10 +360,10 @@ say('综合分 = ' + ranking_total('Steve'))
 ### C.1 数据库位置
 
 ```
-<世界>/ranking-stats.db
+<世界>/hermes-stats.db
 ```
 
-运行期还会有 `ranking-stats.db-wal` / `ranking-stats.db-shm`（WAL 模式）。
+运行期还会有 `hermes-stats.db-wal` / `hermes-stats.db-shm`（WAL 模式）。
 **读取时请用支持 WAL 的客户端**（Python 的 `sqlite3`、Java 的 `sqlite-jdbc`、DBeaver 等都支持），
 不要用会锁库的老工具。
 
@@ -346,6 +388,12 @@ CREATE TABLE player_names (
     name      TEXT    NOT NULL,
     last_seen INTEGER NOT NULL,   -- 毫秒时间戳，最近一次被落库时的时间
     PRIMARY KEY (uuid)
+);
+
+-- 元信息（导入时间等）
+CREATE TABLE hermes_meta (
+    key   TEXT PRIMARY KEY,
+    value TEXT
 );
 ```
 
@@ -406,7 +454,7 @@ WHERE metric = 'playtime_ticks' AND domain = 'REAL';
 * **写**：请**不要**直接改 `player_stats`。Hermes Lib 在内存里保存的是绝对累计值，
   下一次落库会用 UPSERT **覆盖**你的修改（运行期间被删除的非零行也会被重新写回）。
   要清数据请先优雅关闭服务端，再删除对应的行——重启后不会复活。
-* **备份**：直接复制 `ranking-stats.db` 即可；若想保证一致，先优雅关闭服务端
+* **备份**：直接复制 `hermes-stats.db` 即可；若想保证一致，先优雅关闭服务端
   （关闭时会 checkpoint 并截断 WAL）。
 
 ---

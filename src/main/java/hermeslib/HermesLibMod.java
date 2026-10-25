@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Hermes Lib —— 纯数据记录与接口提供型 Carpet 附属模组。
+ * Hermes-lib —— 纯数据记录与接口提供型 Carpet 附属模组。
  *
  * <p>本模组只做三件事：</p>
  * <ol>
@@ -17,10 +17,13 @@ import org.slf4j.LoggerFactory;
  *
  * <p>不提供任何查询命令、排行榜、计分板、HUD、Tab 展示或聊天栏输出。</p>
  */
-public final class HermesLib implements ModInitializer
+public final class HermesLibMod implements ModInitializer
 {
-    public static final String MOD_ID = "hermes";
-    public static final String MOD_NAME = "Hermes Lib";
+    /** Mod ID（与 fabric.mod.json 保持一致）。 */
+    public static final String MOD_ID = "hermes_lib";
+
+    /** 显示名。 */
+    public static final String MOD_NAME = "Hermes-lib";
 
     public static final Logger LOG = LoggerFactory.getLogger(MOD_NAME);
 
