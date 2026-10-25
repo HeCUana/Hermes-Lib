@@ -19,14 +19,14 @@ import java.util.Map;
  * <p>本扩展只负责「采集 + 存储 + 暴露接口」：</p>
  * <ul>
  *   <li>通过 {@link #extensionSettingsManager()} 提供一组<b>采集开关规则</b>
- *       （命令 {@code /hermes}，配置存于世界目录 {@code hermes.conf}）；</li>
+ *       （命令 {@code /hermesLib}，配置存于世界目录 {@code hermesLib.conf}）；</li>
  *   <li>不注册任何玩家查询命令、不注册排行榜 / 计分板 / HUD / Tab 展示。</li>
  * </ul>
  */
 public final class HermesExtension implements CarpetExtension
 {
-    /** 设置管理器标识，同时也是规则命令名与配置文件名（hermes.conf）。 */
-    public static final String IDENTIFIER = "hermes";
+    /** 设置管理器标识，同时也是规则命令名与配置文件名（hermesLib.conf）。 */
+    public static final String IDENTIFIER = "hermesLib";
 
     private SettingsManager settingsManager;
     private HermesStatsManager statsManager;
