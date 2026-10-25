@@ -1,0 +1,25 @@
+# Gradle
+.gradle/
+build/
+out/
+classes/
+
+# Loom / Fabric dev runtime
+run/
+remappedSrc/
+.architectury-transformer/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+bin/
+
+# OS
+.DS_Store
+Thumbs.db

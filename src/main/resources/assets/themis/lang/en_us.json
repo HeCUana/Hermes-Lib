@@ -1,0 +1,75 @@
+{
+  "themis.category.ranking": "Ranking",
+
+  "themis.rule.rankingEnabled.name": "Ranking enabled",
+  "themis.rule.rankingEnabled.desc": "Master switch for all Themis Lib data collection. When disabled no metric is collected at all.",
+
+  "themis.rule.rankingTrackPlayTime.name": "Track play time",
+  "themis.rule.rankingTrackPlayTime.desc": "Collect how long each player (or fake player) has been online.",
+
+  "themis.rule.rankingTrackBlocksMined.name": "Track blocks mined",
+  "themis.rule.rankingTrackBlocksMined.desc": "Collect how many blocks each player has broken.",
+
+  "themis.rule.rankingTrackBlocksPlaced.name": "Track blocks placed",
+  "themis.rule.rankingTrackBlocksPlaced.desc": "Collect how many blocks each player has placed.",
+
+  "themis.rule.rankingTrackMobKills.name": "Track mob kills",
+  "themis.rule.rankingTrackMobKills.desc": "Collect how many mobs each player has killed.",
+
+  "themis.rule.rankingTrackPlayerKills.name": "Track player kills",
+  "themis.rule.rankingTrackPlayerKills.desc": "Collect how many players each player has killed.",
+
+  "themis.rule.rankingTrackDeaths.name": "Track deaths",
+  "themis.rule.rankingTrackDeaths.desc": "Collect how many times each player has died.",
+
+  "themis.rule.rankingTrackVillagerTrades.name": "Track villager trades",
+  "themis.rule.rankingTrackVillagerTrades.desc": "Collect how many villager trades each player has made.",
+
+  "themis.rule.rankingTrackFishCaught.name": "Track fish caught",
+  "themis.rule.rankingTrackFishCaught.desc": "Collect how many times each player has reeled in a fishing hook.",
+
+  "themis.rule.rankingTrackElytraDistance.name": "Track elytra distance",
+  "themis.rule.rankingTrackElytraDistance.desc": "Collect the distance flown with an elytra, in centi-blocks.",
+
+  "themis.rule.rankingTrackDamageDealt.name": "Track damage dealt",
+  "themis.rule.rankingTrackDamageDealt.desc": "Collect the amount of damage each player has dealt.",
+
+  "themis.rule.rankingTrackDamageTaken.name": "Track damage taken",
+  "themis.rule.rankingTrackDamageTaken.desc": "Collect the amount of damage each player has taken.",
+
+  "themis.rule.rankingTrackMovement.name": "Track movement",
+  "themis.rule.rankingTrackMovement.desc": "Collect walking, sprinting, swimming, riding and elytra distance, in centi-blocks.",
+
+  "themis.rule.rankingTrackItemsCrafted.name": "Track items crafted",
+  "themis.rule.rankingTrackItemsCrafted.desc": "Collect the number of items produced by crafting.",
+
+  "themis.rule.rankingTrackItemsPickedUp.name": "Track items picked up",
+  "themis.rule.rankingTrackItemsPickedUp.desc": "Collect the number of items picked up from the ground.",
+
+  "themis.rule.rankingTrackItemsDropped.name": "Track items dropped",
+  "themis.rule.rankingTrackItemsDropped.desc": "Collect the number of items dropped on the ground.",
+
+  "themis.rule.rankingTrackItemsUsed.name": "Track items used",
+  "themis.rule.rankingTrackItemsUsed.desc": "Collect how many times each player has used an item.",
+
+  "themis.rule.rankingTrackItemsBroken.name": "Track items damaged and broken",
+  "themis.rule.rankingTrackItemsBroken.desc": "Collect durability damage events and tools or armour that broke completely.",
+
+  "themis.rule.rankingTrackAnimalsBred.name": "Track animals bred",
+  "themis.rule.rankingTrackAnimalsBred.desc": "Collect how many times each player has bred animals.",
+
+  "themis.rule.rankingTrackAnimalsTamed.name": "Track animals tamed",
+  "themis.rule.rankingTrackAnimalsTamed.desc": "Collect how many animals each player has tamed.",
+
+  "themis.rule.rankingTrackEnchantments.name": "Track enchantments",
+  "themis.rule.rankingTrackEnchantments.desc": "Collect how many enchantments each player has applied.",
+
+  "themis.rule.rankingTrackJumps.name": "Track jumps",
+  "themis.rule.rankingTrackJumps.desc": "Collect how many times each player has jumped.",
+
+  "themis.rule.rankingMinedNaturalOnly.name": "Only count natural blocks as mined",
+  "themis.rule.rankingMinedNaturalOnly.desc": "Only count blocks that were not placed by a player. Prevents place-then-mine farming.",
+
+  "themis.rule.rankingSeparateFakePlayers.name": "Store fake players separately",
+  "themis.rule.rankingSeparateFakePlayers.desc": "Store fake player data in the FAKE domain instead of REAL. When disabled fake data still keeps its own UUID, so real player data is never overwritten."
+}

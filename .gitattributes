@@ -1,0 +1,14 @@
+# 默认按文本处理，仓库内统一 LF
+* text=auto eol=lf
+
+# 二进制文件不做换行转换
+*.jar binary
+*.zip binary
+*.png binary
+*.jpg binary
+*.db binary
+
+# Gradle wrapper 需要保持原样
+gradle/wrapper/gradle-wrapper.jar binary
+gradlew text eol=lf
+gradlew.bat text eol=crlf

@@ -1,0 +1,92 @@
+plugins {
+    id 'net.fabricmc.fabric-loom' version "${loom_version}"
+    id 'maven-publish'
+}
+
+base {
+    archivesName = project.archives_base_name
+}
+
+version = project.mod_version
+group = project.maven_group
+
+repositories {
+    // Carpet 由 JitPack 分发
+    maven {
+        name = 'JitPack'
+        url = 'https://jitpack.io'
+    }
+    mavenCentral()
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    // Carpet 附属模组：编译期 + 运行期都需要 Carpet
+    implementation "com.github.gnembon:fabric-carpet:${project.carpet_version}"
+
+    // SQLite 驱动：普通依赖 + JiJ（Fabric Jar-in-Jar）打包
+    implementation "org.xerial:sqlite-jdbc:${project.sqlite_version}"
+    include "org.xerial:sqlite-jdbc:${project.sqlite_version}"
+
+    // 说明：sqlite-jdbc 内含各平台原生库（约 12MB），JiJ 后随模组一起分发。
+    // 若希望把驱动打进自己的 fat-jar（而不是嵌套 jar），可改用 shadow 方案：
+    //
+    //   plugins { id 'com.github.johnrengelman.shadow' version '8.1.1' }
+    //   dependencies { implementation "org.xerial:sqlite-jdbc:${project.sqlite_version}" }
+    //   tasks.named('shadowJar') { archiveClassifier = '' ; relocate 'org.sqlite', 'com.themislib.libs.sqlite' }
+    //   tasks.named('remapJar') { dependsOn tasks.named('shadowJar') }
+    //
+    // 代价：relocate 会显著增大最终 jar（原生库无法被 relocate 瘦身），
+    // 收益：产出单个 jar，服主无需处理 JiJ 兼容性。
+}
+
+processResources {
+    inputs.property "version", project.version
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+loom {
+    runs {
+        // 开发环境启动服务端时打开 Mixin 审计：启动阶段就校验所有注入点是否存在，
+        // 避免运行到一半才发现某个 @Inject 目标写错导致崩服。
+        server {
+            vmArgs "-Dmixin.debug.audit=true"
+            vmArgs "-Dthemis.debug=true"
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = "UTF-8"
+    // Minecraft 26.x 使用 Java 25+
+    it.options.release = 25
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.archives_base_name}" }
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url = "$projectDir/publish"
+        }
+    }
+}
