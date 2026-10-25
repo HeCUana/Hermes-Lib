@@ -1,10 +1,9 @@
 # Themis Lib
 
-> 纯数据记录与接口提供型 **Carpet 附属 Mod**。
+> 纯后端 **Carpet 附属 Mod**。
 > 监听游戏行为 → 按「玩家 / 假人」分域累计 → 持久化到 SQLite → 通过 Java API（可选 Scarpet 函数）暴露数据。
 
-**本模组刻意不提供**：任何查询命令（如 `/ranking`）、排行榜分页、计分板、HUD、Tab 列表、聊天栏展示、玩家交互 UI。
-排行、奖励、展示逻辑全部由下游消费者（其它 Mod / Scarpet 脚本 / 直接读 SQLite）自行实现。
+**本模组刻意不提供**：任何游戏内前端查询手段（如 `/ranking`、排行榜、分页、计分板、HUD、Tab 列表、聊天栏展示、玩家交互 UI）。
 
 ---
 
@@ -15,12 +14,11 @@
 | Minecraft | 26.3 |
 | Java | 25+（编译用 `--release 25`） |
 | Fabric Loader | 0.19.5 |
-| Fabric Loom | 1.17.x（注意：新版本已移除 `modImplementation`，改用 `implementation`） |
+| Fabric Loom | 1.17.x |
 | Carpet | 26.3（`com.github.gnembon:fabric-carpet:26.3`，JitPack） |
 | SQLite | `org.xerial:sqlite-jdbc:3.53.4.0` |
 
 > 所有 Mixin 注入点均按 **MC 26.3 / Mojang 官方映射** 核对过（用 `javap` 直接读本地
-> `minecraft-merged-deobf-26.3.jar` 验证），不是凭记忆写的。
 
 ---
 
@@ -88,8 +86,7 @@ themis-lib/
 | `rankingTrackAnimalsTamed` | true | 驯服次数 |
 | `rankingTrackEnchantments` | true | 附魔次数 |
 | `rankingTrackJumps` | true | 跳跃次数 |
-| `rankingMinedNaturalOnly` | **true** | 只统计自然方块（防放置刷榜） |
-| `rankingSeparateFakePlayers` | **true** | 假人数据写入独立 FAKE 域 |
+| `rankingSeparateFakePlayers` | true | 假人数据写入独立 FAKE 域 |
 
 > Carpet 26 的规则描述走翻译键（`themis.rule.<规则名>.desc`），缺少翻译会直接抛异常，
 > 所以 `assets/themis/lang/*.json` 必须和规则类同步维护。
@@ -196,16 +193,6 @@ ON CONFLICT(uuid, domain, metric) DO UPDATE SET value=excluded.value;
 1. **`Player` 覆写了 `actuallyHurt` 且不调用父类** → 在 `LivingEntity` 上注入抓不到玩家的伤害，
    所以额外写了 `PlayerMixin`。
 2. **`ServerPlayer` 覆写了 `jumpFromGround` 和 `drop`** → 同理，必须挂在 `ServerPlayer` 上。
-
-### 「仅统计自然方块」怎么实现
-
-原版没有「方块是否自然生成」的标记位。可靠做法是**追踪放置行为**：
-
-* 放置时（`BlockItem#place`）把 `(维度, x, y, z)` 记进 `PlacedBlockTracker`；
-* 破坏时（`ServerPlayerGameMode#destroyBlock`）若命中记录 → 说明是「自己放的自己挖」→ 不计入自然挖掘量；
-* 记录带 30 分钟过期时间与 20 万条容量上限，服务重启后清空。
-
-副作用：`rankingMinedNaturalOnly=false` 时统计全部破坏（仍然消费记录，避免残留）。
 
 ---
 
@@ -360,7 +347,7 @@ dependencies {
 
 ---
 
-## 13. 已知环境坑（都已在代码里规避或注明）
+## 13. 已知环境坑
 
 1. **MC 26.3 的「空服暂停」**：`pause-when-empty-seconds=0` 的含义是「**立即**暂停」，
    不是「永不暂停」。测试时要用 `86400` 之类的较大值，否则服务端不 tick，
