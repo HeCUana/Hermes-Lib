@@ -3,6 +3,7 @@ package hermeslib.collector;
 import hermeslib.HermesLibMod;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityReference;
 import net.minecraft.world.entity.LivingEntity;
@@ -14,8 +15,44 @@ import net.minecraft.world.entity.projectile.Projectile;
  */
 public final class HermesCollectors
 {
+    /**
+     * 单次伤害计入统计的上限。
+     *
+     * <p>正常战斗的伤害最多也就几千；超过这个值的（例如 {@code /damage @s 2000000000}）
+     * 一律不计入，避免把统计数据写坏。</p>
+     */
+    public static final long MAX_COUNTABLE_DAMAGE = 1_000_000L;
+
     private HermesCollectors()
     {
+    }
+
+    /**
+     * 计算这次伤害是否应该计入统计，以及计入多少。
+     *
+     * <p><b>为什么要有这个过滤</b>：MC 26.3 的 {@code LivingEntity#kill(ServerLevel)}
+     * 是这样实现「杀死」的：</p>
+     * <pre>{@code
+     * this.hurtServer(level, this.damageSources().genericKill(), Float.MAX_VALUE);
+     * }</pre>
+     * 也就是说 {@code /kill} 会造成一次 {@code Float.MAX_VALUE}（3.4e38）的伤害，
+     * 直接 {@code Math.round} 会得到 {@code 2147483647}（21 亿）这种荒谬数值。
+     * 这里把 {@code /kill} 的伤害以及异常大的数值一并排除。</p>
+     *
+     * @param source 伤害来源
+     * @param amount 原始伤害值
+     * @return 需要计入的伤害点数；0 表示本次伤害不计入统计
+     */
+    public static int countableDamage(DamageSource source, float amount)
+    {
+        if (source == null) return 0;
+        if (amount <= 0 || !Float.isFinite(amount)) return 0;
+        // /kill 造成的「致命一击」：数值是 Float.MAX_VALUE，不计入
+        if (source.is(DamageTypes.GENERIC_KILL)) return 0;
+
+        long rounded = Math.round(amount);
+        if (rounded > MAX_COUNTABLE_DAMAGE) return 0;
+        return (int) rounded;
     }
 
     /**

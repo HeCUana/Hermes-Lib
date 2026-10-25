@@ -58,8 +58,12 @@ public abstract class LivingEntityMixin
         HermesStatsManager manager = HermesStatsManager.get();
         if (manager == null) return;
 
+        // 过滤 /kill 的 Float.MAX_VALUE 伤害与异常大数值
+        int damage = HermesCollectors.countableDamage(source, amount);
+        if (damage <= 0) return;
+
         ServerPlayer attacker = HermesCollectors.attackerOf(source);
         if (attacker == null) return;
-        manager.add(attacker, Metric.DAMAGE_DEALT, Math.round(amount));
+        manager.add(attacker, Metric.DAMAGE_DEALT, damage);
     }
 }

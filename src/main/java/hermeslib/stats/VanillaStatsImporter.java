@@ -26,7 +26,7 @@ import java.util.stream.Stream;
  * <p><b>只做纯 IO 与解析，不碰内存也不碰数据库</b>，
  * 由 {@link HermesStatsManager#importVanillaStats()} 在异步线程上调用。</p>
  *
- * <p>原版统计文件位置：{@code <世界>/stats/<UUID>.json}，
+ * <p>原版统计文件位置：{@code <世界>/players/stats/<UUID>.json}，
  * 结构为 {@code {"stats": {"<类型>": {"<key>": 数值}}, "DataVersion": N}}。</p>
  */
 public final class VanillaStatsImporter
@@ -50,7 +50,7 @@ public final class VanillaStatsImporter
     /**
      * 扫描统计目录并解析所有玩家文件。
      *
-     * @param statsDir 原版统计目录（{@code <世界>/stats}）
+     * @param statsDir 原版统计目录（{@code <世界>/players/stats}）
      * @param names    已知的「UUID → 玩家名」，可为 null
      */
     public static Outcome scan(Path statsDir, Map<UUID, String> names)

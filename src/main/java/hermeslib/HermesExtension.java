@@ -70,7 +70,7 @@ public final class HermesExtension implements CarpetExtension
     @Override
     public void onServerLoadedWorlds(MinecraftServer server)
     {
-        // 世界已加载完毕，原版统计目录（<世界>/stats）此时才存在。
+        // 世界已加载完毕，原版统计目录（<世界>/players/stats）此时才存在。
         // 启动参数 -Dhermes.importVanillaOnStart=true 时自动导入一次原版统计。
         if (!Boolean.getBoolean("hermes.importVanillaOnStart")) return;
         HermesStatsManager manager = this.statsManager;

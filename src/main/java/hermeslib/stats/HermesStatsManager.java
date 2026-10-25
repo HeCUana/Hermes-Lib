@@ -667,7 +667,7 @@ public final class HermesStatsManager implements RankingDataProvider
      *
      * <p><b>流程</b>：</p>
      * <ol>
-     *   <li>异步线程：扫描 {@code <世界>/stats/<UUID>.json}，解析并按
+     *   <li>异步线程：扫描 {@code <世界>/players/stats/<UUID>.json}，解析并按
      *       {@link VanillaStatMapping} 映射成 Hermes 指标；</li>
      *   <li>主线程：把导入值<b>覆盖</b>写进内存（原版统计本身是累计值，累加会让数值翻倍）；</li>
      *   <li>SQLite 线程：按 UPSERT 覆盖落库（同样是覆盖语义，重复导入幂等）。</li>
@@ -689,7 +689,9 @@ public final class HermesStatsManager implements RankingDataProvider
         }
 
         Path worldPath = server.getWorldPath(LevelResource.ROOT);
-        Path statsDir = worldPath.resolve("stats");
+        // 原版统计目录：MC 26.3 是 <世界>/players/stats/<UUID>.json
+        // （旧版本是 <世界>/stats/，这里直接用原版的常量，版本自适应）
+        Path statsDir = server.getWorldPath(LevelResource.PLAYER_STATS_DIR);
 
         // 名字来源（按可靠性从低到高依次覆盖）：
         // 1) Hermes 内存里已知的名字（该玩家在模组装上后玩过）

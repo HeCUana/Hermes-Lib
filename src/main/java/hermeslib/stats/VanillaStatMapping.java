@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * 原版统计（{@code <世界>/stats/<UUID>.json}）到 Hermes 指标的映射表。
+ * 原版统计（{@code <世界>/players/stats/<UUID>.json}）到 Hermes 指标的映射表。
  *
  * <p>原版统计分两种组织方式：</p>
  * <ul>

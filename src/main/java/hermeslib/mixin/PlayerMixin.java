@@ -39,17 +39,21 @@ public abstract class PlayerMixin
         HermesStatsManager manager = HermesStatsManager.get();
         if (manager == null) return;
 
+        // 过滤 /kill 的 Float.MAX_VALUE 伤害与异常大数值
+        int damage = HermesCollectors.countableDamage(source, amount);
+        if (damage <= 0) return;
+
         // 玩家受到的伤害
         if ((Object) this instanceof ServerPlayer victim)
         {
-            manager.add(victim, Metric.DAMAGE_TAKEN, Math.round(amount));
+            manager.add(victim, Metric.DAMAGE_TAKEN, damage);
         }
 
         // 玩家对玩家造成的伤害（对生物的伤害在 LivingEntityMixin 里统计）
         ServerPlayer attacker = HermesCollectors.attackerOf(source);
         if (attacker != null)
         {
-            manager.add(attacker, Metric.DAMAGE_DEALT, Math.round(amount));
+            manager.add(attacker, Metric.DAMAGE_DEALT, damage);
         }
     }
 }

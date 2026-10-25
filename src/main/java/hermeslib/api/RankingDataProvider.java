@@ -71,7 +71,7 @@ public interface RankingDataProvider
     /**
      * 导入原版（Vanilla）统计数据。
      *
-     * <p>扫描 {@code <世界>/stats/<UUID>.json}，把原版的累计统计按
+     * <p>扫描 {@code <世界>/players/stats/<UUID>.json}，把原版的累计统计按
      * {@link hermeslib.stats.VanillaStatMapping} 映射到 Hermes 指标，
      * <b>覆盖</b>写入内存与数据库（不是累加，因此重复导入幂等、不会翻倍）。</p>
      *
