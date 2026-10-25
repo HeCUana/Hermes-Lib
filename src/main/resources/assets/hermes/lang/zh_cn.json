@@ -71,5 +71,17 @@
   "hermes.rule.rankingMinedNaturalOnly.desc": "只统计并非由玩家放置的方块，杜绝「放置后立刻挖掉」的刷榜行为。",
 
   "hermes.rule.rankingSeparateFakePlayers.name": "假人数据单独存储",
-  "hermes.rule.rankingSeparateFakePlayers.desc": "把假人数据写入 FAKE 数据域而不是 REAL。关闭时假人数据仍使用独立 UUID，不会覆盖真实玩家的数据。"
+  "hermes.rule.rankingSeparateFakePlayers.desc": "把假人数据写入 FAKE 数据域而不是 REAL。关闭时假人数据仍使用独立 UUID，不会覆盖真实玩家的数据。",
+
+  "hermes.rule.rankingTrackSurvival.name": "统计生存模式玩家",
+  "hermes.rule.rankingTrackSurvival.desc": "是否统计处于生存模式的玩家（真人与假人一视同仁）。关闭后该模式下所有玩家不再产生任何统计。",
+
+  "hermes.rule.rankingTrackAdventure.name": "统计冒险模式玩家",
+  "hermes.rule.rankingTrackAdventure.desc": "是否统计处于冒险模式的玩家（真人与假人一视同仁）。关闭后该模式下所有玩家不再产生任何统计。",
+
+  "hermes.rule.rankingTrackSpectator.name": "统计旁观模式玩家",
+  "hermes.rule.rankingTrackSpectator.desc": "是否统计处于旁观模式的玩家（真人与假人一视同仁）。关闭后该模式下所有玩家不再产生任何统计。",
+
+  "hermes.rule.rankingTrackCreative.name": "统计创造模式玩家",
+  "hermes.rule.rankingTrackCreative.desc": "是否统计处于创造模式的玩家（真人与假人一视同仁）。关闭后该模式下所有玩家不再产生任何统计。"
 }

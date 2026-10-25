@@ -71,5 +71,17 @@
   "hermes.rule.rankingMinedNaturalOnly.desc": "Only count blocks that were not placed by a player. Prevents place-then-mine farming.",
 
   "hermes.rule.rankingSeparateFakePlayers.name": "Store fake players separately",
-  "hermes.rule.rankingSeparateFakePlayers.desc": "Store fake player data in the FAKE domain instead of REAL. When disabled fake data still keeps its own UUID, so real player data is never overwritten."
+  "hermes.rule.rankingSeparateFakePlayers.desc": "Store fake player data in the FAKE domain instead of REAL. When disabled fake data still keeps its own UUID, so real player data is never overwritten.",
+
+  "hermes.rule.rankingTrackSurvival.name": "Track survival mode players",
+  "hermes.rule.rankingTrackSurvival.desc": "Whether to track players in survival mode (real players and fake players alike). When disabled, players in this mode produce no stats at all.",
+
+  "hermes.rule.rankingTrackAdventure.name": "Track adventure mode players",
+  "hermes.rule.rankingTrackAdventure.desc": "Whether to track players in adventure mode (real players and fake players alike). When disabled, players in this mode produce no stats at all.",
+
+  "hermes.rule.rankingTrackSpectator.name": "Track spectator mode players",
+  "hermes.rule.rankingTrackSpectator.desc": "Whether to track players in spectator mode (real players and fake players alike). When disabled, players in this mode produce no stats at all.",
+
+  "hermes.rule.rankingTrackCreative.name": "Track creative mode players",
+  "hermes.rule.rankingTrackCreative.desc": "Whether to track players in creative mode (real players and fake players alike). When disabled, players in this mode produce no stats at all."
 }

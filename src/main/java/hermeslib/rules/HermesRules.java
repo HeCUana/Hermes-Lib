@@ -128,6 +128,29 @@ public class HermesRules
     @Rule(categories = { CATEGORY })
     public static boolean rankingSeparateFakePlayers = true;
 
+    // ==================== 游戏模式过滤 ====================
+
+    /**
+     * 是否统计处于生存模式的玩家（真人与假人一视同仁）。
+     *
+     * <p>四条模式规则独立开关，默认全部开启；关闭某条后，处于该模式的玩家
+     * 不会产生任何统计（对所有指标生效，同样适用于在线时长与移动距离）。</p>
+     */
+    @Rule(categories = { CATEGORY })
+    public static boolean rankingTrackSurvival = true;
+
+    /** 是否统计处于冒险模式的玩家。 */
+    @Rule(categories = { CATEGORY })
+    public static boolean rankingTrackAdventure = true;
+
+    /** 是否统计处于旁观模式的玩家。 */
+    @Rule(categories = { CATEGORY })
+    public static boolean rankingTrackSpectator = true;
+
+    /** 是否统计处于创造模式的玩家。 */
+    @Rule(categories = { CATEGORY })
+    public static boolean rankingTrackCreative = true;
+
     private HermesRules()
     {
     }

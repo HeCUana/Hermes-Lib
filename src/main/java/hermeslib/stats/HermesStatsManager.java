@@ -4,6 +4,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.storage.LevelResource;
 import hermeslib.api.DataDomain;
 import hermeslib.api.Metric;
@@ -118,13 +119,15 @@ public final class HermesStatsManager implements RankingDataProvider
     /**
      * 累加一个指标（对外给 Mixin 调用的主入口）。
      *
-     * <p>会自动完成：总开关判断 → 指标开关判断 → 假人识别 → 数据域分流 → UUID 归一。</p>
+     * <p>会自动完成：总开关判断 → 指标开关判断 → 游戏模式过滤 → 假人识别 →
+     * 数据域分流 → UUID 归一。</p>
      */
     public void add(Player player, Metric metric, long amount)
     {
         if (player == null || amount == 0L) return;
         if (!isMetricEnabled(metric)) return;
         if (!(player instanceof ServerPlayer serverPlayer)) return;  // 只统计服务端玩家
+        if (!isGameModeTracked(serverPlayer)) return;                // 游戏模式不在统计范围
 
         UUID uuid = FakePlayerDetector.effectiveUuid(serverPlayer);
         DataDomain domain = FakePlayerDetector.domainOf(serverPlayer);
@@ -155,6 +158,7 @@ public final class HermesStatsManager implements RankingDataProvider
     public void recordEnchantUser(ServerPlayer player)
     {
         if (player == null) return;
+        if (!isGameModeTracked(player)) return;  // 使用者模式不在统计范围，不产生归属
         lastEnchantUser = new EnchantUser(
                 FakePlayerDetector.effectiveUuid(player),
                 FakePlayerDetector.domainOf(player),
@@ -228,6 +232,26 @@ public final class HermesStatsManager implements RankingDataProvider
             default:
                 return true;
         }
+    }
+
+    /**
+     * 该玩家当前的游戏模式是否在统计范围内（真人与假人一视同仁）。
+     *
+     * <p>由规则 {@code rankingTrackSurvival} / {@code rankingTrackAdventure} /
+     * {@code rankingTrackSpectator} / {@code rankingTrackCreative} 逐模式控制，
+     * 默认全部统计。规则改动即时生效，无需重启。</p>
+     */
+    public static boolean isGameModeTracked(ServerPlayer player)
+    {
+        if (player == null) return false;
+        GameType mode = player.gameMode.getGameModeForPlayer();
+        return switch (mode)
+        {
+            case SURVIVAL -> HermesRules.rankingTrackSurvival;
+            case ADVENTURE -> HermesRules.rankingTrackAdventure;
+            case SPECTATOR -> HermesRules.rankingTrackSpectator;
+            case CREATIVE -> HermesRules.rankingTrackCreative;
+        };
     }
 
     // ==================== 每 tick 采集 ====================

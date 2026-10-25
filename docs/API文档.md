@@ -395,6 +395,11 @@ WHERE metric = 'playtime_ticks' AND domain = 'REAL';
 | `playtime_ticks` | tick | 20 tick = 1 秒 |
 | 其它 | 计数 | — |
 
+**统计范围（游戏模式过滤）**：哪些玩家会产生数据由 4 条规则逐模式控制——
+`rankingTrackSurvival` / `rankingTrackAdventure` / `rankingTrackSpectator` / `rankingTrackCreative`
+（默认全开，真人与假人一视同仁，逐事件判定、改动即时生效）。关闭某条后，
+处于该模式的玩家对所有指标停止累计，其**历史数据保留**但不再增长。
+
 ### C.5 读写边界
 
 * **读**：完全自由，WAL 模式支持并发读。
