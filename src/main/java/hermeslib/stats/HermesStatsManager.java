@@ -70,6 +70,17 @@ public final class HermesStatsManager implements RankingDataProvider
     private final ConcurrentHashMap<String, UUID> nameIndex = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, double[]> lastPositions = new ConcurrentHashMap<>();
 
+    /**
+     * 假人注册表：见过的假人 UUID → 名字。
+     *
+     * <p>原版统计文件里只有 UUID，看不出属于真人还是假人；
+     * 这张表让导入时能把假人的历史统计正确分到 FAKE 数据域。</p>
+     */
+    private final ConcurrentHashMap<UUID, String> fakePlayers = new ConcurrentHashMap<>();
+
+    /** 假人注册表是否有未落库的变更。 */
+    private volatile boolean fakeRegistryDirty = false;
+
     /** 原版统计导入专用线程：文件 IO 与 JSON 解析都放在这里，绝不占用游戏主线程。 */
     private final ExecutorService importExecutor = Executors.newSingleThreadExecutor(runnable ->
     {
@@ -215,6 +226,16 @@ public final class HermesStatsManager implements RankingDataProvider
         {
             names.put(uuid, name);
             nameIndex.put(name.toLowerCase(Locale.ROOT), uuid);
+        }
+
+        // 假人注册表：记住见过的假人，导入原版统计时才能把它们分到 FAKE 域
+        if (domain == DataDomain.FAKE && FakePlayerDetector.isFake(serverPlayer) && name != null)
+        {
+            if (!name.equals(fakePlayers.get(uuid)))
+            {
+                fakePlayers.put(uuid, name);
+                fakeRegistryDirty = true;
+            }
         }
     }
 
@@ -509,6 +530,12 @@ public final class HermesStatsManager implements RankingDataProvider
         }
         // last_seen 只刷新本次真正落库的玩家，不触碰历史玩家的记录
         manager.upsert(rows, flushedNames);
+        // 假人注册表有变更时一并落库（导入时要用它判断数据域）
+        if (fakeRegistryDirty)
+        {
+            manager.upsertFakes(fakePlayers);
+            fakeRegistryDirty = false;
+        }
         if (HermesLibMod.DEBUG)
         {
             HermesLibMod.LOG.info("[Hermes][debug] 落库(周期) 行数={} 玩家数={}", rows.size(), data.size());
@@ -571,6 +598,9 @@ public final class HermesStatsManager implements RankingDataProvider
             names.put(entry.getKey(), entry.getValue());
             nameIndex.put(entry.getValue().toLowerCase(Locale.ROOT), entry.getKey());
         }
+
+        // 载入假人注册表（导入原版统计时用来判断数据域）
+        fakePlayers.putAll(manager.loadFakes());
     }
 
     // ==================== 对外 API 实现 ====================
@@ -695,13 +725,18 @@ public final class HermesStatsManager implements RankingDataProvider
 
         // 名字来源（按可靠性从低到高依次覆盖）：
         // 1) Hermes 内存里已知的名字（该玩家在模组装上后玩过）
-        // 2) usercache.json（服务端根目录）
-        // 3) 当前在线玩家
+        // 2) 假人注册表里的名字
+        // 3) 服务端根目录的已知清单：usercache.json / ops.json / whitelist.json / banned-players.json
+        // 4) 当前在线玩家
         Map<UUID, String> nameMap = new HashMap<>(names);
-        Path serverRoot = worldPath.getParent();
+        nameMap.putAll(fakePlayers);
+        // 服务端根目录（usercache.json / ops.json / whitelist.json / banned-players.json 都在这里）。
+        // 注意：不能用 worldPath.getParent() —— getWorldPath 返回的路径带尾部分隔符，
+        // 它的 parent 是世界目录本身，而不是服务端根目录。
+        Path serverRoot = server.getServerDirectory();
         if (serverRoot != null)
         {
-            nameMap.putAll(VanillaStatsImporter.readUserCache(serverRoot));
+            nameMap.putAll(VanillaStatsImporter.readKnownPlayers(serverRoot));
         }
         for (ServerPlayer player : server.getPlayerList().getPlayers())
         {
@@ -725,15 +760,21 @@ public final class HermesStatsManager implements RankingDataProvider
             return new ImportResult(0, 0, 0, List.of("导入任务失败：" + message));
         }
 
-        // 2) 组装要写入的行（覆盖语义）
+        // 2) 组装要写入的行
+        //    数据域：见过面的假人归 FAKE，其余归 REAL（与实时采集保持一致）
+        //    数值：取「原版累计」与「实时累计」的较大者，避免陈旧文件覆盖更新的数据
         List<StatRow> rows = new ArrayList<>();
         Map<UUID, String> importedNames = new HashMap<>();
+        int fakeCount = 0;
         for (VanillaStatsImporter.PlayerImport imported : outcome.players())
         {
+            DataDomain domain = fakePlayers.containsKey(imported.uuid()) ? DataDomain.FAKE : DataDomain.REAL;
+            if (domain == DataDomain.FAKE) fakeCount++;
+
             for (Map.Entry<Metric, Long> entry : imported.values().entrySet())
             {
                 rows.add(new StatRow(imported.uuid().toString(),
-                        DataDomain.REAL.id(), entry.getKey().dbName(), entry.getValue()));
+                        domain.id(), entry.getKey().dbName(), entry.getValue()));
             }
             if (imported.name() != null)
             {
@@ -741,16 +782,17 @@ public final class HermesStatsManager implements RankingDataProvider
             }
         }
 
-        // 3) 切回主线程刷新内存（覆盖，不是累加）
+        // 3) 切回主线程刷新内存（取较大值，不是累加）
         runOnServerThread(server, () ->
         {
             for (VanillaStatsImporter.PlayerImport imported : outcome.players())
             {
-                PlayerStats stats = data.computeIfAbsent(new StatKey(imported.uuid(), DataDomain.REAL),
+                DataDomain domain = fakePlayers.containsKey(imported.uuid()) ? DataDomain.FAKE : DataDomain.REAL;
+                PlayerStats stats = data.computeIfAbsent(new StatKey(imported.uuid(), domain),
                         key -> new PlayerStats());
                 for (Map.Entry<Metric, Long> entry : imported.values().entrySet())
                 {
-                    stats.set(entry.getKey(), entry.getValue());
+                    stats.setMax(entry.getKey(), entry.getValue());
                 }
                 if (imported.name() != null)
                 {
@@ -769,8 +811,8 @@ public final class HermesStatsManager implements RankingDataProvider
             manager.putMeta("last_vanilla_import_players", Integer.toString(outcome.players().size()));
         }
 
-        HermesLibMod.LOG.info("[Hermes] 原版统计导入完成：成功 {} 人，跳过 {} 个文件，写入 {} 条指标",
-                outcome.players().size(), outcome.skipped(), rows.size());
+        HermesLibMod.LOG.info("[Hermes] 原版统计导入完成：成功 {} 人（其中假人 {} 人），跳过 {} 个文件，写入 {} 条指标",
+                outcome.players().size(), fakeCount, outcome.skipped(), rows.size());
 
         return new ImportResult(outcome.players().size(), outcome.skipped(), rows.size(), outcome.errors());
     }

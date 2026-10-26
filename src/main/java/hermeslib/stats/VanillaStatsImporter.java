@@ -118,6 +118,31 @@ public final class VanillaStatsImporter
     }
 
     /**
+     * 读取原版「UUID → 玩家名」的已知清单。
+     *
+     * <p>服务端根目录里有好几个含名字的文件，都读一遍当名字来源：</p>
+     * <ul>
+     *   <li>{@code usercache.json} —— 登录过的所有玩家（最全）；</li>
+     *   <li>{@code ops.json} —— 管理员；</li>
+     *   <li>{@code whitelist.json} —— 白名单；</li>
+     *   <li>{@code banned-players.json} —— 封禁名单。</li>
+     * </ul>
+     *
+     * <p>拿不到就返回空表 —— 导入不依赖名字，不应因此失败。</p>
+     */
+    public static Map<UUID, String> readKnownPlayers(Path serverRoot)
+    {
+        Map<UUID, String> names = new HashMap<>();
+        if (serverRoot == null) return names;
+
+        names.putAll(readUserCache(serverRoot));
+        names.putAll(readNamedList(serverRoot.resolve("ops.json")));
+        names.putAll(readNamedList(serverRoot.resolve("whitelist.json")));
+        names.putAll(readNamedList(serverRoot.resolve("banned-players.json")));
+        return names;
+    }
+
+    /**
      * 读取原版玩家档案缓存，用于把 UUID 还原成玩家名。
      *
      * <p>文件位于服务端根目录（世界目录的上一级）：
@@ -154,6 +179,41 @@ public final class VanillaStatsImporter
         catch (Exception e)
         {
             // 拿不到名字不阻塞导入
+            return names;
+        }
+        return names;
+    }
+
+    /**
+     * 读取 {@code ops.json} / {@code whitelist.json} / {@code banned-players.json}
+     * 这类「数组 + uuid/name」的清单文件。
+     */
+    private static Map<UUID, String> readNamedList(Path file)
+    {
+        Map<UUID, String> names = new HashMap<>();
+        if (!Files.isRegularFile(file)) return names;
+        try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8))
+        {
+            JsonElement root = GSON.fromJson(reader, JsonElement.class);
+            if (root == null || !root.isJsonArray()) return names;
+            for (JsonElement element : root.getAsJsonArray())
+            {
+                if (element == null || !element.isJsonObject()) continue;
+                JsonObject object = element.getAsJsonObject();
+                if (!object.has("uuid") || !object.has("name")) continue;
+                try
+                {
+                    names.put(UUID.fromString(object.get("uuid").getAsString()), object.get("name").getAsString());
+                }
+                catch (RuntimeException ignored)
+                {
+                    // 脏数据，跳过
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            // 读不到就跳过这一份
             return names;
         }
         return names;

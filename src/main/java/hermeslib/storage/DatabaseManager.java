@@ -74,9 +74,33 @@ public final class DatabaseManager implements AutoCloseable
             )
             """;
 
+    /**
+     * 假人注册表：记录见过的假人 UUID 与名字。
+     *
+     * <p>用途：原版统计文件里只有 UUID，看不出这个 UUID 属于真人还是假人；
+     * 有了这张表，导入时就能把假人的历史统计正确地放进 FAKE 数据域。</p>
+     */
+    private static final String CREATE_FAKE_TABLE = """
+            CREATE TABLE IF NOT EXISTS fake_players (
+                uuid      TEXT    NOT NULL,
+                name      TEXT    NOT NULL,
+                last_seen INTEGER NOT NULL,
+                PRIMARY KEY (uuid)
+            )
+            """;
+
+    /**
+     * 落库语句。
+     *
+     * <p><b>为什么用 MAX 而不是直接覆盖</b>：内存里保存的是「绝对累计值」，
+     * 但原版统计文件可能是**陈旧的**（玩家还在线时文件停留在上次登出那一刻），
+     * 直接覆盖会把更新更快的实时数据冲掉。取两者较大值即可：
+     * 原版是「从第一次进世界起累计」，实时是「从装上模组起累计」，
+     * 两者是同一批事件的两个子集，较大的那个才是正确的累计值。</p>
+     */
     private static final String UPSERT_STATS = """
             INSERT INTO player_stats(uuid, domain, metric, value) VALUES(?,?,?,?)
-            ON CONFLICT(uuid, domain, metric) DO UPDATE SET value=excluded.value
+            ON CONFLICT(uuid, domain, metric) DO UPDATE SET value=MAX(value, excluded.value)
             """;
 
     private static final String UPSERT_NAME = """
@@ -146,6 +170,7 @@ public final class DatabaseManager implements AutoCloseable
                 statement.execute(CREATE_STATS_INDEX);
                 statement.execute(CREATE_NAMES_TABLE);
                 statement.execute(CREATE_META_TABLE);
+                statement.execute(CREATE_FAKE_TABLE);
             }
             LOG.info("[Hermes] SQLite 已就绪：{}", dbFile.toAbsolutePath());
         }
@@ -228,11 +253,84 @@ public final class DatabaseManager implements AutoCloseable
     }
 
     /**
+     * 写入/更新假人注册表（异步）。
+     *
+     * @param fakes 假人 UUID → 名字
+     */
+    public CompletableFuture<Void> upsertFakes(Map<UUID, String> fakes)
+    {
+        if (fakes == null || fakes.isEmpty())
+        {
+            return CompletableFuture.completedFuture(null);
+        }
+        Map<UUID, String> snapshot = new java.util.HashMap<>(fakes);
+        return CompletableFuture.runAsync(() ->
+        {
+            if (connection == null) return;
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "INSERT INTO fake_players(uuid, name, last_seen) VALUES(?,?,?) "
+                            + "ON CONFLICT(uuid) DO UPDATE SET name=excluded.name, last_seen=excluded.last_seen"))
+            {
+                long now = System.currentTimeMillis();
+                for (Map.Entry<UUID, String> entry : snapshot.entrySet())
+                {
+                    ps.setString(1, entry.getKey().toString());
+                    ps.setString(2, entry.getValue());
+                    ps.setLong(3, now);
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+            }
+            catch (SQLException e)
+            {
+                LOG.error("[Hermes] 写入 fake_players 失败", e);
+            }
+        }, executor);
+    }
+
+    /** 读取假人注册表；失败返回空表。 */
+    public Map<UUID, String> loadFakes()
+    {
+        try
+        {
+            return executor.submit(() ->
+            {
+                Map<UUID, String> result = new java.util.HashMap<>();
+                if (connection == null) return result;
+                try (Statement statement = connection.createStatement();
+                     ResultSet rs = statement.executeQuery("SELECT uuid, name FROM fake_players"))
+                {
+                    while (rs.next())
+                    {
+                        try
+                        {
+                            result.put(UUID.fromString(rs.getString(1)), rs.getString(2));
+                        }
+                        catch (IllegalArgumentException ignored)
+                        {
+                            // 脏数据，跳过
+                        }
+                    }
+                }
+                catch (SQLException e)
+                {
+                    LOG.error("[Hermes] 读取 fake_players 失败", e);
+                }
+                return result;
+            }).get(60, TimeUnit.SECONDS);
+        }
+        catch (Exception e)
+        {
+            LOG.error("[Hermes] 读取 fake_players 失败", e);
+            return Collections.emptyMap();
+        }
+    }
+
+    /**
      * 写入一条元信息（异步）。
      *
      * @return 提交完成的 future；失败只记日志
-     */
-    public CompletableFuture<Void> putMeta(String key, String value)
+     */    public CompletableFuture<Void> putMeta(String key, String value)
     {
         if (key == null) return CompletableFuture.completedFuture(null);
         return CompletableFuture.runAsync(() ->

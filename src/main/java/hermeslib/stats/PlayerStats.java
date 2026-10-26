@@ -52,6 +52,20 @@ public final class PlayerStats
         }
     }
 
+    /**
+     * 取较大值写入。
+     *
+     * <p>用于原版统计导入：原版统计是「从第一次进世界起累计」，
+     * 而 Hermes 的实时值是「从装上模组起累计」——后者是前者的子集。
+     * 但原版文件可能是陈旧的（玩家还在线时文件停留在上次登出那一刻），
+     * 盲目覆盖反而会把更新的实时数据冲掉，所以统一取两者较大值。</p>
+     */
+    public void setMax(Metric metric, long value)
+    {
+        if (value <= get(metric)) return;
+        set(metric, value);
+    }
+
     public long get(Metric metric)
     {
         return values[metric.ordinal()].sum();

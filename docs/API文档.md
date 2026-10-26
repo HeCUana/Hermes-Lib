@@ -228,9 +228,9 @@ public record ImportResult(
 | 项 | 行为 |
 |---|---|
 | 数据来源 | `<世界>/players/stats/<UUID>.json`（每个进过世界的玩家一个文件，含已离线玩家） |
-| 名字来源 | Hermes 已知名单 → `usercache.json` → 在线玩家列表；都拿不到则只导数据不写名字 |
-| 写入语义 | **覆盖**（原版统计本身是累计值，累加会让数值翻倍）；重复导入幂等 |
-| 数据域 | 一律 `REAL` |
+| 名字来源 | 假人注册表 → `usercache.json` / `ops.json` / `whitelist.json` / `banned-players.json`（服务端根目录）→ 在线玩家；都拿不到则只导数据不写名字 |
+| 写入语义 | 取「原版累计」与「实时累计」的**较大值**（原版文件可能是陈旧的，盲目覆盖会冲掉更新的实时数据）；重复导入幂等 |
+| 数据域 | 见过面的假人 → `FAKE`，其余 → `REAL`（与实时采集一致） |
 | 线程 | 文件 IO 与 JSON 解析在 `Hermes-Import` 线程；完成后切回主线程刷新内存并落库 |
 | 返回时机 | 返回时数据**已经**可以在 API 中读到 |
 | 失败 | 解析失败/版本不兼容的文件计入 `playersSkipped` 并写进 `errors`，不影响其它玩家 |
@@ -394,6 +394,14 @@ CREATE TABLE player_names (
 CREATE TABLE hermes_meta (
     key   TEXT PRIMARY KEY,
     value TEXT
+);
+
+-- 假人注册表（导入时用来判断数据域）
+CREATE TABLE fake_players (
+    uuid      TEXT    NOT NULL,
+    name      TEXT    NOT NULL,
+    last_seen INTEGER NOT NULL,
+    PRIMARY KEY (uuid)
 );
 ```
 
